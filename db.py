@@ -11,6 +11,10 @@ Base = declarative_base(bind = engine)
 Session = sessionmaker(bind = engine)
 session = Session()
 
+def get_id(d):
+ """Get the id from a dictionary d."""
+ return d.get('storeId', d.get('id', d.get('trackId', d.get('nid'))))
+
 artist_tracks = Table('artist_tracks',
  Base.metadata,
  Column('artist_key', Integer(), ForeignKey('artists.key')),
@@ -53,9 +57,10 @@ class Track(Base):
  def populate(self, d):
   """Populate from a dictionary d."""
   self.album = d.get('album', 'Unknown Album')
-  ref = d.get('albumArtRef', [])
-  if ref:
-   self.album_art_url = ref[0]['url']
+  try:
+   self.album_art_url = d['albumArtRef'][0]['url']
+  except IndexError:
+   pass # There is no album art.
   self.album_artist = d.get('albumArtist', 'Unknown Album Artist')
   self.album_id = d['albumId']
   self.artist = d.get('artist', 'Unknown Artist')
@@ -70,7 +75,7 @@ class Track(Base):
   self.disc_number = d.get('discNumber', 1)
   self.duration = timedelta(seconds = int(d.get('durationMillis', '0')) / 1000)
   self.genre = d.get('genre', 'No Genre')
-  self.id = d.get('storeId', d.get('id', d.get('trackId', d.get('nid'))))
+  self.id = get_id(d)
   self.last_played = datetime.now()
   self.play_count = d.get('playCount', 0)
   self.title = d.get('title', 'Untitled Track')
