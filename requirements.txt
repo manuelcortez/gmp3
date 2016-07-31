@@ -10,3 +10,4 @@ git+https://github.com/chrisnorman7/configobj-dialog.git#egg=configobj_dialog
 sqlalchemy
 gmusicapi
 requests
+git+https://github.com/chrisnorman7/default_argparse.git#egg=default_argparse

@@ -91,3 +91,4 @@ ENV/
 # Custom stuff:
 creds.ini
 *.sqlite3
+*.db

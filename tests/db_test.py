@@ -3,18 +3,23 @@
 import config
 config.db_url = 'sqlite:///gmp-test.sqlite3'
 
-import db
 from tests import api
+from db import *
 
-from unittest import TestCase
+Base.metadata.create_all()
 
-class TestDB(TestCase):
- session = db.session
- db.Base.metadata.create_all()
- track = db.Track()
- 
- def test_track(self):
-  d = api.search('test')['song_hits'][0]['track']
-  self.track.populate(d)
-  self.session.add(self.track)
-  assert self.session.commit() is None
+track = Track()
+
+def test_track():
+ d = api.search('test')['song_hits'][0]['track']
+ track.populate(d)
+ session.add(track)
+
+def test_artist():
+ assert session.query(Track).count()
+ a = session.query(Artist).first()
+ assert a is not None
+ d = api.get_artist_info(a.id)
+ a.populate(d)
+ assert a.name is not None
+ assert a.bio is not None

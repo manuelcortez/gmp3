@@ -1,6 +1,6 @@
 """Database specifics."""
 
-import config
+import config, os.path
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
@@ -29,8 +29,13 @@ class Artist(Base):
  bio = Column(String(length = 10000), nullable = True)
  tracks = relationship('Track', secondary = artist_tracks)
  
+ def populate(self, d):
+  """Load data from a dictionary d."""
+  self.name = d.get('name', 'Unknown Artist')
+  self.bio = d.get('artistBio')
+ 
  def __str__(self):
-  return self.name
+  return '<Unloaded>' if self.name is None else self.name
 
 class Track(Base):
  __tablename__ = 'tracks'
@@ -46,7 +51,7 @@ class Track(Base):
  disc_number = Column(Integer(), nullable = False)
  duration = Column(Interval())
  genre = Column(String(length = 100), nullable = False)
- id = Column(String(length = 30), nullable = False)
+ id = Column(String(length = 30), nullable = True)
  last_played = Column(DateTime(), nullable = False)
  lyrics = Column(String(length = 100000), nullable = True)
  play_count = Column(Integer(), nullable = False)
@@ -84,3 +89,14 @@ class Track(Base):
  
  def __str__(self):
   return '{0.artist} - {0.title}'.format(self)
+
+def list_to_objects(l):
+ """Return a list of database objects seeded from a list l."""
+ for item in l:
+  try:
+   track = session.query(Track).filter(Track.id == get_id(item)).one()
+  except exc.NoResultFound:
+   track = Track()
+  track.populate(item)
+  session.add(track)
+  yield track
