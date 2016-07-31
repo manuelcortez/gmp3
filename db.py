@@ -1,12 +1,13 @@
 """Database specifics."""
 
-import config, os.path
+import os.path
+from config import db_config
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
 from datetime import datetime, timedelta
 
-engine = create_engine(config.db_config['url'], echo = config.db_config['echo'])
+engine = create_engine(db_config['url'], echo = db_config['echo'])
 Base = declarative_base(bind = engine)
 Session = sessionmaker(bind = engine)
 session = Session()
@@ -58,6 +59,16 @@ class Track(Base):
  title = Column(String(length = 200), nullable = False)
  track_number = Column(Integer(), nullable = False)
  year = Column(Integer(), nullable = False)
+ 
+ @property
+ def path(self):
+  """Return an appropriate path for this result."""
+  return os.path.join(db_config['media_dir'], self.id + '.mp3')
+ 
+ @property
+ def downloaded(self):
+  """Return whether or not this track is downloaded."""
+  return os.path.isfile(self.path)
  
  def populate(self, d):
   """Populate from a dictionary d."""

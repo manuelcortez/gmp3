@@ -4,7 +4,7 @@ import config
 config.db_url = 'sqlite:///gmp-test.sqlite3'
 
 from tests import api
-from db import *
+from db import Base, session, Track, Artist
 
 Base.metadata.create_all()
 
@@ -14,6 +14,7 @@ def test_track():
  d = api.search('test')['song_hits'][0]['track']
  track.populate(d)
  session.add(track)
+ assert track.downloaded == False
 
 def test_artist():
  assert session.query(Track).count()

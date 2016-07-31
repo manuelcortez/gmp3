@@ -15,3 +15,5 @@ output = Output()
 from gmusicapi.clients import Mobileclient
 api = Mobileclient()
 api.android_id = '123456789abcde'
+
+track = None # The currently playing track.

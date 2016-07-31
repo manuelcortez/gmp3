@@ -3,7 +3,13 @@
 from threading import Thread
 import wx, application
 from wxgoodies.keys import add_accelerator
-from db import list_to_objects, session
+from db import list_to_objects, session, Track
+from sqlalchemy import func, or_
+from config import save, config, db_config
+from configobj_dialog import ConfigObjDialog
+from gmusicapi.exceptions import NotLoggedIn
+from functions.util import do_login
+from functions.sound import play
 
 SEARCH_LABEL = '&Search'
 SEARCHING_LABEL = '&Searching...'
@@ -20,9 +26,9 @@ class MainFrame(wx.Frame):
   self.next = wx.Button(p, label = '&Next')
   self.search_label = wx.StaticText(p, label = SEARCH_LABEL)
   self.search = wx.TextCtrl(p, style = wx.TE_PROCESS_ENTER)
-  self.search.Bind(wx.EVT_TEXT_ENTER, self.do_search)
-  self.search_remote = wx.CheckBox(p, label = '&Include Google Results')
-  self.search_remote.SetValue(True)
+  self.search.Bind(wx.EVT_TEXT_ENTER, lambda event: self.do_remote_search() if self.search_remote.GetValue() else self.do_local_search())
+  self.search_remote = wx.CheckBox(p, label = '&Google Search')
+  self.search_remote.SetValue(db_config['remote'])
   s1.AddMany([
    (self.previous, 0, wx.GROW),
    (self.play, 0, wx.GROW),
@@ -53,6 +59,13 @@ class MainFrame(wx.Frame):
   p.SetSizerAndFit(s)
   self.SetTitle()
   self.Bind(wx.EVT_CLOSE, self.on_close)
+  mb = wx.MenuBar()
+  self.options_menu = wx.Menu()
+  for s in config.sections:
+   section = config[s]
+   self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s' % section.title))
+  mb.Append(self.options_menu, '&Options')
+  self.SetMenuBar(mb)
  
  def SetTitle(self, title = None):
   """Set the title to something."""
@@ -60,28 +73,60 @@ class MainFrame(wx.Frame):
    title = 'Not Playing'
   super(MainFrame, self).SetTitle('%s - %s' % (application.name, title))
  
- def do_search(self, event):
+ def add_result(self, result):
+  """Add a result to the view."""
+  self.view.Append(str(result))
+  self.results.append(result)
+ 
+ def add_results(self, results, clear = True, focus = True):
+  """Add results to the view."""
+  if clear:
+   self.view.Clear()
+   self.results = []
+   for r in results:
+    self.add_result(r)
+   if focus:
+    self.view.SetFocus()
+ 
+ def do_remote_search(self):
   """Perform a search."""
+  what = self.search.GetValue()
   def f(what):
    """Get the results and pass them onto f2."""
-   results = [x['track'] for x in application.api.search(what)['song_hits']]
-   def f2(results):
-    """Clear the results queue and re-enable the search box."""
-    self.results = []
-    self.search.Clear()
-    self.view.Clear()
-    for r in list_to_objects(results):
-     self.results.append(r)
-     self.view.Append(str(r))
-    self.search_label.SetLabel(SEARCH_LABEL)
-    self.view.SetFocus()
+   try:
+    results = [x['track'] for x in application.api.search(what)['song_hits']]
+    def f2(results):
+     """Clear the results queue and re-enable the search box."""
+     self.search.Clear()
+     self.add_results(list_to_objects(results))
+     self.search_label.SetLabel(SEARCH_LABEL)
+   except NotLoggedIn:
+    def f2(results):
+     """Get the user to login."""
+     self.search_label.SetLabel(SEARCH_LABEL)
+     do_login(callback = f, args = [what])
+    results = []
    wx.CallAfter(f2, results)
   self.search_label.SetLabel(SEARCHING_LABEL)
-  Thread(target = f, args = [self.search.GetValue()]).start()
+  Thread(target = f, args = [what]).start()
+ 
+ def do_local_search(self):
+  """Perform a local search."""
+  what = '%%%s%%' % self.search.GetValue()
+  results = session.query(Track).filter(
+   or_(
+    func.lower(Track.title).like(what),
+    func.lower(Track.artist).like(what),
+    func.lower(Track.album).like(what)
+   )
+  ).all()
+  self.add_results(results)
  
  def on_close(self, event):
   """Close the window."""
+  db_config['remote'] = self.search_remote.GetValue()
   session.commit()
+  save()
   event.Skip()
  
  def on_activate(self, event):
@@ -89,4 +134,5 @@ class MainFrame(wx.Frame):
   cr = self.view.GetSelection()
   if cr == -1:
    return wx.Bell()
-  wx.MessageBox('You pressed enter on %s.' % self.results[cr], 'Congratulations')
+  else:
+   play(self.results[cr])

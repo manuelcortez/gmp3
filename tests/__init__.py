@@ -1,4 +1,4 @@
-import sys, configobj, os, os.path
+import sys, configobj
 sys.path.insert(0, '.')
 
 config = configobj.ConfigObj('creds.ini')

@@ -1,6 +1,6 @@
 """Configuration stuff."""
 
-import application, os, os.path, wx
+import application, os, os.path, wx, db
 from wx.lib.filebrowsebutton import DirBrowseButton
 from configobj import ConfigObj
 from validate import Validator
@@ -24,12 +24,17 @@ config = ConfigObj(os.path.join(config_dir, 'config.ini')) # The main configurat
 # Create individual configuration sections:
 
 # Database configuration.
-config['db'] = {}
+config['db'] = config.get('db', {})
 db_config = config['db']
 db_config.title = 'Database'
+def db_config_updated():
+ db.engine.echo = db_config['echo']
+ application.frame.search_remote.SetValue(db_config['remote'])
+db_config.config_updated = db_config_updated
 spec = ConfigObj()
 spec['url'] = 'string(default = "sqlite:///catalogue.db")' # The URL for the database.
 spec['echo'] = 'boolean(default = False)' # The echo argument for create_engine.
+spec['remote'] = 'boolean(default = True)'
 spec['media_dir'] = 'string(default = "%s")' % os.path.join(config_dir, 'media')
 db_config.configspec = spec
 db_config.controls = {
@@ -38,10 +43,12 @@ db_config.controls = {
 db_config.names = {
  'url': 'Database &URL (Only change if you know what you\'re doing)',
  'echo': 'Enable Database &Debugging',
+ 'remote': 'Enable Google Search',
  'media_dir': '&Media Directory'
 }
 
-config['login'] = {}
+# Login configuration.
+config['login'] = config.get('login', {})
 login_config = config['login']
 login_config.title = 'Login'
 spec = ConfigObj()
