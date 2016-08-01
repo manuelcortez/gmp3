@@ -20,7 +20,32 @@ def play(track):
    return do_login(callback = play, args = [track])
  else:
   stream = FileStream(file = track.path)
- if application.track is not None:
-  application.track.stop()
- application.track = stream
+ application.track = track
+ if application.stream is not None:
+  application.stream.stop()
+ application.stream = stream
  stream.play()
+ prev = get_previous()
+ application.frame.previous.SetLabel('&Previous' if prev is None else '&Previous (%s)' % prev)
+ next = get_next(remove = False)
+ application.frame.next.SetLabel('&Next' if next is None else '&Next (%s)' % next)
+
+def get_next(remove = True):
+ """Get the next track which should be played. If remove == True, delete the track from the queue if that's where it came from."""
+ if application.frame.queue:
+  t = application.frame.queue[0]
+  if remove:
+   application.frame.queue.remove(t)
+ else:
+  try:
+   t = application.frame.results[application.frame.results.index(application.track) + 1]
+  except IndexError:
+   return None
+ return t
+
+def get_previous():
+ """Get the previous track."""
+ try:
+  return application.frame.results[application.frame.results.index(application.track) - 1]
+ except IndexError:
+  return None

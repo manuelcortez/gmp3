@@ -16,4 +16,5 @@ from gmusicapi.clients import Mobileclient
 api = Mobileclient()
 api.android_id = '123456789abcde'
 
-track = None # The currently playing track.
+track = None # The current track.
+stream = None # The stream of the currently playing track.
