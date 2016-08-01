@@ -4,8 +4,8 @@ from threading import Thread
 import wx, application
 from wxgoodies.keys import add_accelerator
 from db import list_to_objects, session, Track
+from config import save, db_config, sections
 from sqlalchemy import func, or_
-from config import save, config, db_config
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login
@@ -61,8 +61,7 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_CLOSE, self.on_close)
   mb = wx.MenuBar()
   self.options_menu = wx.Menu()
-  for s in config.sections:
-   section = config[s]
+  for section in sections:
    self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s' % section.title))
   mb.Append(self.options_menu, '&Options')
   self.SetMenuBar(mb)

@@ -50,6 +50,11 @@ spec['media_dir'] = 'string(default = "%s")' % os.path.join(config_dir, 'media')
 spec['quality'] = 'option("low", "med", "hi", default = "hi")'
 spec['download'] = 'boolean(default = True)'
 storage_config.configspec = spec
+storage_config.names = {
+ 'media_dir': '&Media Directory',
+ 'quality': 'Audio &Quality',
+ 'download': '&Download tracks'
+}
 
 class QualityChoice(wx.Choice):
  def __init__(self, dlg, name, value):
@@ -65,6 +70,7 @@ class QualityChoice(wx.Choice):
   return self.SetStringSelection(value)
 
 storage_config.controls = {
+ 'media_dir': make_dir_browser,
  'quality': QualityChoice
 }
 
@@ -77,21 +83,24 @@ def db_config_updated():
  application.frame.search_remote.SetValue(db_config['remote'])
 db_config.config_updated = db_config_updated
 spec = ConfigObj()
-spec['url'] = 'string(default = "sqlite:///catalogue.db")' # The URL for the database.
+spec['url'] = 'string(default = "sqlite:///%s")' % os.path.join(config_dir, 'catalogue.db') # The URL for the database.
 spec['echo'] = 'boolean(default = False)' # The echo argument for create_engine.
 spec['remote'] = 'boolean(default = True)'
 db_config.configspec = spec
-db_config.controls = {
- 'media_dir': make_dir_browser
-}
 db_config.names = {
  'url': 'Database &URL (Only change if you know what you\'re doing)',
  'echo': 'Enable Database &Debugging',
- 'remote': 'Enable Google Search',
- 'media_dir': '&Media Directory'
+ 'remote': 'Enable &Google Search'
 }
 
 # All configuration sections must be created above this line.
+# 
+# Add all configuration sections to the below list in the order they should appear in the Options menu.
+sections = [
+ login_config,
+ storage_config,
+ db_config
+]
 
 validator = Validator()
 for section in config.sections:
