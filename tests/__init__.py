@@ -21,5 +21,6 @@ if not api.login(config['uid'], config['pwd'], api.FROM_MAC_ADDRESS):
  config['pwd'] = ''
  quit('Login failed.')
 
+import db # Or else importing config fails.
 from config import db_config
 db_config['url'] = 'sqlite:///test.db'
