@@ -4,6 +4,7 @@ import application
 from threading import Thread
 from .util import do_login
 from .network import download_track
+from config import storage_config
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
@@ -13,7 +14,8 @@ def play(track):
   try:
    url = application.api.get_stream_url(track.id)
    stream = URLStream(url.encode())
-   Thread(target = download_track, args = [url, track.path]).start()
+   if storage_config['download']:
+    Thread(target = download_track, args = [url, track.path]).start()
   except NotLoggedIn:
    return do_login(callback = play, args = [track])
  else:
