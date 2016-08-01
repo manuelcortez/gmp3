@@ -1,7 +1,7 @@
 """Database specifics."""
 
 import os.path
-from config import db_config
+from config import db_config, storage_config
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
@@ -63,7 +63,7 @@ class Track(Base):
  @property
  def path(self):
   """Return an appropriate path for this result."""
-  return os.path.join(db_config['media_dir'], self.id + '.mp3')
+  return os.path.join(storage_config['media_dir'], self.id + '.mp3')
  
  @property
  def downloaded(self):

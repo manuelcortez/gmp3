@@ -23,30 +23,6 @@ config = ConfigObj(os.path.join(config_dir, 'config.ini')) # The main configurat
 
 # Create individual configuration sections:
 
-# Database configuration.
-config['db'] = config.get('db', {})
-db_config = config['db']
-db_config.title = 'Database'
-def db_config_updated():
- db.engine.echo = db_config['echo']
- application.frame.search_remote.SetValue(db_config['remote'])
-db_config.config_updated = db_config_updated
-spec = ConfigObj()
-spec['url'] = 'string(default = "sqlite:///catalogue.db")' # The URL for the database.
-spec['echo'] = 'boolean(default = False)' # The echo argument for create_engine.
-spec['remote'] = 'boolean(default = True)'
-spec['media_dir'] = 'string(default = "%s")' % os.path.join(config_dir, 'media')
-db_config.configspec = spec
-db_config.controls = {
- 'media_dir': make_dir_browser
-}
-db_config.names = {
- 'url': 'Database &URL (Only change if you know what you\'re doing)',
- 'echo': 'Enable Database &Debugging',
- 'remote': 'Enable Google Search',
- 'media_dir': '&Media Directory'
-}
-
 # Login configuration.
 config['login'] = config.get('login', {})
 login_config = config['login']
@@ -63,6 +39,56 @@ login_config.names = {
  'uid': '&Username',
  'pwd': '&Password',
  'remember': '&Remember Credentials'
+}
+
+# Storage configuration.
+config['storage'] = config.get('storage', {})
+storage_config = config['storage']
+storage_config.title = 'Storage'
+spec = ConfigObj()
+spec['media_dir'] = 'string(default = "%s")' % os.path.join(config_dir, 'media')
+spec['quality'] = 'option("low", "med", "hi", default = "hi")'
+spec['download'] = 'boolean(default = True)'
+storage_config.configspec = spec
+
+class QualityChoice(wx.Choice):
+ def __init__(self, dlg, name, value):
+  super(QualityChoice, self).__init__(dlg.panel, choices = ['hi', 'med', 'low'])
+  self.SetValue(value)
+ 
+ def GetValue(self):
+  """Get the value of this control as a string."""
+  return self.GetStringSelection()
+ 
+ def SetValue(self, value):
+  """Set the value of this control."""
+  return self.SetStringSelection(value)
+
+storage_config.controls = {
+ 'quality': QualityChoice
+}
+
+# Database configuration.
+config['db'] = config.get('db', {})
+db_config = config['db']
+db_config.title = 'Database'
+def db_config_updated():
+ db.engine.echo = db_config['echo']
+ application.frame.search_remote.SetValue(db_config['remote'])
+db_config.config_updated = db_config_updated
+spec = ConfigObj()
+spec['url'] = 'string(default = "sqlite:///catalogue.db")' # The URL for the database.
+spec['echo'] = 'boolean(default = False)' # The echo argument for create_engine.
+spec['remote'] = 'boolean(default = True)'
+db_config.configspec = spec
+db_config.controls = {
+ 'media_dir': make_dir_browser
+}
+db_config.names = {
+ 'url': 'Database &URL (Only change if you know what you\'re doing)',
+ 'echo': 'Enable Database &Debugging',
+ 'remote': 'Enable Google Search',
+ 'media_dir': '&Media Directory'
 }
 
 # All configuration sections must be created above this line.

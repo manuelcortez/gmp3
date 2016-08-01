@@ -1,20 +1,24 @@
 """Sound-related functions."""
 
 import application
+from threading import Thread
 from .util import do_login
 from .network import download_track
-from sound_lib.stream import FileStream
+from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
 def play(track):
  """Play a track."""
  if not track.downloaded:
   try:
-   download_track(track)
+   url = application.api.get_stream_url(track.id)
+   stream = URLStream(url.encode())
+   Thread(target = download_track, args = [url, track.path]).start()
   except NotLoggedIn:
    return do_login(callback = play, args = [track])
- s = FileStream(file = track.path)
+ else:
+  stream = FileStream(file = track.path)
  if application.track is not None:
   application.track.stop()
- application.track = s
- s.play()
+ application.track = stream
+ stream.play()
