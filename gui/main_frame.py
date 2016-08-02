@@ -9,7 +9,7 @@ from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login
-from functions.sound import play
+from functions.sound import play, get_previous, get_next
 
 SEARCH_LABEL = '&Search'
 SEARCHING_LABEL = '&Searching...'
@@ -94,6 +94,8 @@ class MainFrame(wx.Frame):
     self.add_result(r)
    if focus:
     self.view.SetFocus()
+   if clear:
+    self.update_labels()
  
  def do_remote_search(self):
   """Perform a search."""
@@ -131,6 +133,9 @@ class MainFrame(wx.Frame):
  
  def on_close(self, event):
   """Close the window."""
+  if application.stream:
+   application.stream.stop()
+   application.stream = None # Stop the thread from playing the next track.
   db_config['remote'] = self.search_remote.GetValue()
   session.commit()
   save()
@@ -147,3 +152,10 @@ class MainFrame(wx.Frame):
  def update_volume(self, value):
   """Update the volume of the main output."""
   application.output.set_volume(value)
+ 
+ def update_labels(self):
+  """Update the labels of the previous and next buttons."""
+  prev = get_previous()
+  self.previous.SetLabel('&Previous' if prev is None else '&Previous (%s)' % prev)
+  next = get_next(remove = False)
+  self.next.SetLabel('&Next' if next is None else '&Next (%s)' % next)

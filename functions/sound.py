@@ -8,6 +8,14 @@ from config import storage_config
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
+def play_threaded(stream):
+ """Play a stream in a blocking manner before going on to play the next track."""
+ stream.play_blocking()
+ if application.stream is stream:
+  t = get_next(remove = True)
+  if t:
+   play(t)
+
 def play(track):
  """Play a track."""
  if not track.downloaded:
@@ -21,14 +29,12 @@ def play(track):
  else:
   stream = FileStream(file = track.path)
  application.track = track
- if application.stream is not None:
-  application.stream.stop()
+ Thread(target = play_threaded, args = [stream]).start()
+ old_stream = application.stream
  application.stream = stream
- stream.play()
- prev = get_previous()
- application.frame.previous.SetLabel('&Previous' if prev is None else '&Previous (%s)' % prev)
- next = get_next(remove = False)
- application.frame.next.SetLabel('&Next' if next is None else '&Next (%s)' % next)
+ if old_stream is not None:
+  old_stream.stop()
+ application.frame.update_labels()
 
 def get_next(remove = True):
  """Get the next track which should be played. If remove == True, delete the track from the queue if that's where it came from."""
@@ -41,11 +47,16 @@ def get_next(remove = True):
    t = application.frame.results[application.frame.results.index(application.track) + 1]
   except IndexError:
    return None
+  except ValueError:
+   try:
+    t = application.frame.results[0]
+   except IndexError:
+    return None
  return t
 
 def get_previous():
  """Get the previous track."""
  try:
   return application.frame.results[application.frame.results.index(application.track) - 1]
- except IndexError:
+ except (IndexError, ValueError):
   return None
