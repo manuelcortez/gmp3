@@ -4,7 +4,7 @@ from threading import Thread
 import wx, application
 from wxgoodies.keys import add_accelerator
 from db import list_to_objects, session, Track
-from config import save, db_config, sections
+from config import save, db_config, system_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
@@ -54,9 +54,15 @@ class MainFrame(wx.Frame):
    (vs, 1, wx.GROW),
    (ls, 1, wx.GROW),
   ])
+  s3 = wx.BoxSizer(wx.HORIZONTAL)
+  s3.Add(wx.StaticText(p, label = '&Volume'), 0, wx.GROW)
+  self.volume = wx.Slider(p, value = system_config['volume'], style = wx.SL_VERTICAL)
+  self.volume.Bind(wx.EVT_SLIDER, lambda event: self.update_volume(self.volume.GetValue()))
+  s3.Add(self.volume, 1, wx.GROW)
   s.AddMany([
    (s1, 0, wx.GROW),
-   (s2, 1, wx.GROW)
+   (s2, 1, wx.GROW),
+   (s3, 0, wx.GROW),
   ])
   p.SetSizerAndFit(s)
   self.SetTitle()
@@ -137,3 +143,7 @@ class MainFrame(wx.Frame):
    return wx.Bell()
   else:
    play(self.results[cr])
+ 
+ def update_volume(self, value):
+  """Update the volume of the main output."""
+  application.output.set_volume(value)

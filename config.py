@@ -93,6 +93,16 @@ db_config.names = {
  'remote': 'Enable &Google Search'
 }
 
+config['system'] = config.get('system', {})
+system_config = config['system']
+spec = ConfigObj()
+spec['volume'] = 'integer(min = 0, max = 100, default = 100)'
+system_config.configspec = spec
+
+def system_config_updated():
+ """System config was updated."""
+ application.frame.update_volume(system_config['volume'])
+
 # All configuration sections must be created above this line.
 # 
 # Add all configuration sections to the below list in the order they should appear in the Options menu.
