@@ -58,6 +58,7 @@ class MainFrame(wx.Frame):
   s3.Add(wx.StaticText(p, label = '&Volume'), 0, wx.GROW)
   self.volume = wx.Slider(p, value = system_config['volume'], style = wx.SL_VERTICAL)
   self.volume.Bind(wx.EVT_SLIDER, lambda event: self.update_volume(self.volume.GetValue()))
+  self.update_volume(system_config['volume'])
   s3.Add(self.volume, 1, wx.GROW)
   s3.Add(wx.StaticText(p, label = '&Position'), 0, wx.GROW)
   self.position= wx.Slider(p, style = wx.SL_HORIZONTAL)
@@ -81,8 +82,8 @@ class MainFrame(wx.Frame):
   mb.Append(fm, '&File')
   pm = wx.Menu() # Play menu.
   self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.set_volume(max(0, self.Volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down', 'Reduce volume by 5%.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up', 'Increase volume by 5%.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.update_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.update_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
   mb.Append(pm, '&Play')
   self.options_menu = wx.Menu()
   for section in sections:
@@ -149,11 +150,10 @@ class MainFrame(wx.Frame):
  def on_close(self, event):
   """Close the window."""
   self.position_timer.Stop()
-  old_stream  = application.stream
-  application.stream = None # Stop the thread from playing the next track.
-  if old_stream:
-   old_stream.stop()
+  if application.stream:
+   application.stream.stop()
   system_config['offline_search'] = self.offline_search.IsChecked()
+  system_config['volume'] = self.volume.GetValue()
   session.commit()
   save()
   event.Skip()
