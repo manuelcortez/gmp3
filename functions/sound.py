@@ -1,10 +1,10 @@
 """Sound-related functions."""
 
-import application, wx
+import application
 from threading import Thread
 from .util import do_login
 from .network import download_track
-from config import storage_config
+from config import storage_config, system_config
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
@@ -25,6 +25,8 @@ def play(track):
   application.stream.stop()
  stream.play(True)
  application.stream = stream
+ set_pan(system_config['pan'])
+ set_frequency(system_config['frequency'])
  application.frame.SetTitle(str(track))
  application.frame.update_labels()
 
@@ -52,3 +54,21 @@ def get_previous():
   return application.frame.results[application.frame.results.index(application.track) - 1]
  except (IndexError, ValueError):
   return None
+
+def set_volume(value):
+ """Set volume to value."""
+ system_config['volume'] = value
+ application.output.set_volume(value)
+ application.frame.volume.SetValue(value)
+
+def set_pan(value):
+ """Set pan to value."""
+ system_config['pan'] = value
+ if application.stream:
+  application.stream.set_pan(value * 2 / 100 - 1.0)
+
+def set_frequency(value):
+ """Set frequency to value."""
+ system_config['frequency'] = value
+ if application.stream:
+  application.stream.set_frequency(value)

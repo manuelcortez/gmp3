@@ -55,11 +55,13 @@ spec = ConfigObj()
 spec['media_dir'] = 'string(default = "%s")' % os.path.join(config_dir, 'media')
 spec['quality'] = 'option("low", "med", "hi", default = "hi")'
 spec['download'] = 'boolean(default = True)'
+spec['lyrics'] = 'boolean(default = True)'
 storage_config.configspec = spec
 storage_config.names = {
  'media_dir': '&Media Directory',
  'quality': 'Audio &Quality',
- 'download': '&Download tracks'
+ 'download': 'Download &tracks',
+ 'lyrics': 'Download &Lyrics',
 }
 
 class QualityChoice(wx.Choice):
@@ -101,6 +103,10 @@ config['system'] = config.get('system', {})
 system_config = config['system']
 spec = ConfigObj()
 spec['volume'] = 'integer(min = 0, max = 100, default = 100)'
+min_frequency = 100
+max_frequency = 200000
+spec['frequency'] = 'integer(min = {}, max = {}, default = 44100)'.format(min_frequency, max_frequency)
+spec['pan'] = 'integer(min = 0, max = 100, default = 50)'
 spec['offline_search'] = 'boolean(default = False)'
 system_config.configspec = spec
 

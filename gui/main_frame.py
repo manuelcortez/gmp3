@@ -9,7 +9,8 @@ from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login
-from functions.sound import play, get_previous, get_next
+from functions.sound import play, get_previous, get_next, set_volume
+from .audio_options import AudioOptions
 
 SEARCH_LABEL = '&Search'
 SEARCHING_LABEL = '&Searching...'
@@ -57,8 +58,7 @@ class MainFrame(wx.Frame):
   s3 = wx.BoxSizer(wx.HORIZONTAL)
   s3.Add(wx.StaticText(p, label = '&Volume'), 0, wx.GROW)
   self.volume = wx.Slider(p, value = system_config['volume'], style = wx.SL_VERTICAL)
-  self.volume.Bind(wx.EVT_SLIDER, lambda event: self.update_volume(self.volume.GetValue()))
-  self.update_volume(system_config['volume'])
+  self.volume.Bind(wx.EVT_SLIDER, lambda event: set_volume(self.volume.GetValue()))
   s3.Add(self.volume, 1, wx.GROW)
   s3.Add(wx.StaticText(p, label = '&Position'), 0, wx.GROW)
   self.position= wx.Slider(p, style = wx.SL_HORIZONTAL)
@@ -82,14 +82,20 @@ class MainFrame(wx.Frame):
   mb.Append(fm, '&File')
   pm = wx.Menu() # Play menu.
   self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.update_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.update_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
+  self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
+  self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
   mb.Append(pm, '&Play')
   self.options_menu = wx.Menu()
   for section in sections:
-   self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s' % section.title, 'Edit the %s configuration.' % section.title))
+   self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s...' % section.title, 'Edit the %s configuration.' % section.title))
+  self.Bind(wx.EVT_MENU, lambda event: AudioOptions(), self.options_menu.Append(wx.ID_ANY, '&Audio...\tF12', 'Configure advanced audio settings.'))
   mb.Append(self.options_menu, '&Options')
   self.SetMenuBar(mb)
+  self.Bind(wx.EVT_SHOW, self.on_show)
+ 
+ def on_show(self, event):
+  """Show the window."""
+  set_volume(system_config['volume'])
  
  def SetTitle(self, title = None):
   """Set the title to something."""
@@ -165,11 +171,6 @@ class MainFrame(wx.Frame):
    return wx.Bell()
   else:
    play(self.results[cr])
- 
- def update_volume(self, value):
-  """Update the volume of the main output."""
-  self.volume.SetValue(value)
-  application.output.set_volume(value)
  
  def update_labels(self):
   """Update the labels of the previous and next buttons."""
