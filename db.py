@@ -51,6 +51,7 @@ class Track(Base):
  deleted = Column(Boolean(), nullable = False)
  disc_number = Column(Integer(), nullable = False)
  duration = Column(Interval())
+ filename = Column(String(length = 500), nullable = True, default = None)
  genre = Column(String(length = 100), nullable = False)
  id = Column(String(length = 30), nullable = True)
  last_played = Column(DateTime(), nullable = False)

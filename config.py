@@ -1,17 +1,23 @@
 """Configuration stuff."""
 
-import application, os, os.path, wx, db
+import application, os, os.path, wx
 from wx.lib.filebrowsebutton import DirBrowseButton
 from configobj import ConfigObj
 from validate import Validator
 
 config_dir = application.paths.GetUserDataDir()
 
-def save():
- """Dump configuration to disk."""
+def create_config_dir():
+ """Create the configuration directory."""
  if not os.path.isdir(config_dir):
   os.makedirs(config_dir)
+
+def save():
+ """Dump configuration to disk."""
+ create_config_dir()
  config.write()
+
+create_config_dir()
 
 def make_dir_browser(dlg, label, value):
  """Create the control for the media directory selector."""
@@ -79,24 +85,23 @@ config['db'] = config.get('db', {})
 db_config = config['db']
 db_config.title = 'Database'
 def db_config_updated():
+ import db
  db.engine.echo = db_config['echo']
- application.frame.search_remote.SetValue(db_config['remote'])
 db_config.config_updated = db_config_updated
 spec = ConfigObj()
 spec['url'] = 'string(default = "sqlite:///%s")' % os.path.join(config_dir, 'catalogue.db') # The URL for the database.
 spec['echo'] = 'boolean(default = False)' # The echo argument for create_engine.
-spec['remote'] = 'boolean(default = True)'
 db_config.configspec = spec
 db_config.names = {
  'url': 'Database &URL (Only change if you know what you\'re doing)',
  'echo': 'Enable Database &Debugging',
- 'remote': 'Enable &Google Search'
 }
 
 config['system'] = config.get('system', {})
 system_config = config['system']
 spec = ConfigObj()
 spec['volume'] = 'integer(min = 0, max = 100, default = 100)'
+spec['offline_search'] = 'boolean(default = False)'
 system_config.configspec = spec
 
 def system_config_updated():

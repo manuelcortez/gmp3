@@ -8,18 +8,7 @@ from config import storage_config
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
-def play_threaded(stream):
- """Play a stream in a blocking manner before going on to play the next track."""
- application.stream = stream
- wx.CallAfter(application.frame.SetTitle, str(application.track))
- wx.CallAfter(application.frame.update_labels)
- stream.play_blocking(True)
- if stream is application.stream:
-  t = get_next(remove = True)
-  if t:
-   play(t, thread = False)
-
-def play(track, thread = True):
+def play(track):
  """Play a track."""
  if not track.downloaded:
   try:
@@ -33,13 +22,11 @@ def play(track, thread = True):
   stream = FileStream(file = track.path)
  application.track = track
  if application.stream is not None:
-  old_stream = application.stream
-  application.stream = None
-  old_stream.stop()
- if thread: # Play the stream in another thread.
-  Thread(target = play_threaded, args = [stream]).start()
- else:
-  play_threaded(stream)
+  application.stream.stop()
+ stream.play(True)
+ application.stream = stream
+ application.frame.SetTitle(str(track))
+ application.frame.update_labels()
 
 def get_next(remove = True):
  """Get the next track which should be played. If remove == True, delete the track from the queue if that's where it came from."""

@@ -4,7 +4,7 @@ from threading import Thread
 import wx, application
 from wxgoodies.keys import add_accelerator
 from db import list_to_objects, session, Track
-from config import save, db_config, system_config, sections
+from config import save, system_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
@@ -13,6 +13,8 @@ from functions.sound import play, get_previous, get_next
 
 SEARCH_LABEL = '&Search'
 SEARCHING_LABEL = '&Searching...'
+PLAY_LABEL = '&Play'
+PAUSE_LABEL = '&Pause'
 
 class MainFrame(wx.Frame):
  """The main frame."""
@@ -24,20 +26,18 @@ class MainFrame(wx.Frame):
   s = wx.BoxSizer(wx.VERTICAL)
   s1 = wx.BoxSizer(wx.HORIZONTAL)
   self.previous = wx.Button(p, label = '&Previous')
-  self.play = wx.Button(p, label = '&Play')
+  self.play = wx.Button(p, label = PLAY_LABEL)
+  self.play.Bind(wx.EVT_BUTTON, self.play_pause)
   self.next = wx.Button(p, label = '&Next')
   self.search_label = wx.StaticText(p, label = SEARCH_LABEL)
   self.search = wx.TextCtrl(p, style = wx.TE_PROCESS_ENTER)
-  self.search.Bind(wx.EVT_TEXT_ENTER, lambda event: self.do_remote_search() if self.search_remote.GetValue() else self.do_local_search())
-  self.search_remote = wx.CheckBox(p, label = '&Google Search')
-  self.search_remote.SetValue(db_config['remote'])
+  self.search.Bind(wx.EVT_TEXT_ENTER, lambda event: self.do_local_search(self.search.GetValue()) if self.offline_search.IsChecked() else self.do_remote_search(self.search.GetValue()))
   s1.AddMany([
    (self.previous, 0, wx.GROW),
    (self.play, 0, wx.GROW),
    (self.next, 0, wx.GROW),
    (self.search_label, 0, wx.GROW),
-   (self.search, 1, wx.GROW),
-   (self.search_remote, 0, wx.GROW)
+   (self.search, 1, wx.GROW)
   ])
   s2 = wx.BoxSizer(wx.HORIZONTAL)
   vs = wx.BoxSizer(wx.VERTICAL)
@@ -63,7 +63,7 @@ class MainFrame(wx.Frame):
   self.position= wx.Slider(p, style = wx.SL_HORIZONTAL)
   self.position.Bind(wx.EVT_SLIDER, lambda event: application.stream.set_position((int(application.stream.get_length() / 100) * self.position.GetValue())) if application.stream else None)
   self.position_timer = wx.Timer(self)
-  self.Bind(wx.EVT_TIMER, self.update_position, self.position_timer)
+  self.Bind(wx.EVT_TIMER, self.play_manager, self.position_timer)
   self.position_timer.Start(10)
   s.AddMany([
    (s1, 0, wx.GROW),
@@ -74,9 +74,19 @@ class MainFrame(wx.Frame):
   self.SetTitle()
   self.Bind(wx.EVT_CLOSE, self.on_close)
   mb = wx.MenuBar()
+  fm = wx.Menu() # File menu.
+  self.offline_search = fm.AppendCheckItem(wx.ID_ANY, '&Offline Search', 'Search the local database rather than google')
+  self.offline_search.Check(system_config['offline_search'])
+  self.Bind(wx.EVT_MENU, lambda event: self.Close(True), fm.Append(wx.ID_EXIT, '&Quit', 'Exit the program.'))
+  mb.Append(fm, '&File')
+  pm = wx.Menu() # Play menu.
+  self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.set_volume(max(0, self.Volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down', 'Reduce volume by 5%.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up', 'Increase volume by 5%.'))
+  mb.Append(pm, '&Play')
   self.options_menu = wx.Menu()
   for section in sections:
-   self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s' % section.title))
+   self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s' % section.title, 'Edit the %s configuration.' % section.title))
   mb.Append(self.options_menu, '&Options')
   self.SetMenuBar(mb)
  
@@ -103,9 +113,8 @@ class MainFrame(wx.Frame):
    if clear:
     self.update_labels()
  
- def do_remote_search(self):
-  """Perform a search."""
-  what = self.search.GetValue()
+ def do_remote_search(self, what):
+  """Perform a searchon Google Play Music for what."""
   def f(what):
    """Get the results and pass them onto f2."""
    try:
@@ -125,8 +134,8 @@ class MainFrame(wx.Frame):
   self.search_label.SetLabel(SEARCHING_LABEL)
   Thread(target = f, args = [what]).start()
  
- def do_local_search(self):
-  """Perform a local search."""
+ def do_local_search(self, what):
+  """Perform a local search for what."""
   what = '%%%s%%' % self.search.GetValue()
   results = session.query(Track).filter(
    or_(
@@ -144,7 +153,7 @@ class MainFrame(wx.Frame):
   application.stream = None # Stop the thread from playing the next track.
   if old_stream:
    old_stream.stop()
-  db_config['remote'] = self.search_remote.GetValue()
+  system_config['offline_search'] = self.offline_search.IsChecked()
   session.commit()
   save()
   event.Skip()
@@ -159,6 +168,7 @@ class MainFrame(wx.Frame):
  
  def update_volume(self, value):
   """Update the volume of the main output."""
+  self.volume.SetValue(value)
   application.output.set_volume(value)
  
  def update_labels(self):
@@ -168,9 +178,26 @@ class MainFrame(wx.Frame):
   next = get_next(remove = False)
   self.next.SetLabel('&Next' if next is None else '&Next (%s)' % next)
  
- def update_position(self, event):
-  """Update the position bar."""
+ def play_manager(self, event):
+  """Manage the currently playing track."""
   if application.stream:
-   self.position.SetValue(int(application.stream.get_position() * (100 / application.stream.get_length())))
+   pos = application.stream.get_position()
+   length = application.stream.get_length()
+   if not self.position.HasFocus():
+    self.position.SetValue(int(pos * (100 / length)))
+   if pos == length:
+    play(get_next(remove = True))
   else:
    self.position.SetValue(0)
+ 
+ def play_pause(self, event):
+  """Play or pause the current track."""
+  if application.stream:
+   if application.stream.is_paused:
+    application.stream.play()
+    self.play.SetLabel(PAUSE_LABEL)
+   else:
+    application.stream.pause()
+    self.play.SetLabel(PLAY_LABEL)
+  else:
+   wx.Bell()
