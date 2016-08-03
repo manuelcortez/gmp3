@@ -59,6 +59,12 @@ class MainFrame(wx.Frame):
   self.volume = wx.Slider(p, value = system_config['volume'], style = wx.SL_VERTICAL)
   self.volume.Bind(wx.EVT_SLIDER, lambda event: self.update_volume(self.volume.GetValue()))
   s3.Add(self.volume, 1, wx.GROW)
+  s3.Add(wx.StaticText(p, label = '&Position'), 0, wx.GROW)
+  self.position= wx.Slider(p, style = wx.SL_HORIZONTAL)
+  self.position.Bind(wx.EVT_SLIDER, lambda event: application.stream.set_position((int(application.stream.get_length() / 100) * self.position.GetValue())) if application.stream else None)
+  self.position_timer = wx.Timer(self)
+  self.Bind(wx.EVT_TIMER, self.update_position, self.position_timer)
+  self.position_timer.Start(10)
   s.AddMany([
    (s1, 0, wx.GROW),
    (s2, 1, wx.GROW),
@@ -133,9 +139,11 @@ class MainFrame(wx.Frame):
  
  def on_close(self, event):
   """Close the window."""
-  if application.stream:
-   application.stream.stop()
-   application.stream = None # Stop the thread from playing the next track.
+  self.position_timer.Stop()
+  old_stream  = application.stream
+  application.stream = None # Stop the thread from playing the next track.
+  if old_stream:
+   old_stream.stop()
   db_config['remote'] = self.search_remote.GetValue()
   session.commit()
   save()
@@ -159,3 +167,10 @@ class MainFrame(wx.Frame):
   self.previous.SetLabel('&Previous' if prev is None else '&Previous (%s)' % prev)
   next = get_next(remove = False)
   self.next.SetLabel('&Next' if next is None else '&Next (%s)' % next)
+ 
+ def update_position(self, event):
+  """Update the position bar."""
+  if application.stream:
+   self.position.SetValue(int(application.stream.get_position() * (100 / application.stream.get_length())))
+  else:
+   self.position.SetValue(0)
