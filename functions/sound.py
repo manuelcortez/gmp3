@@ -8,6 +8,8 @@ from config import storage_config, system_config
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
+seek_amount = 100000
+
 def play(track):
  """Play a track."""
  if not track.downloaded:
@@ -77,3 +79,7 @@ def queue(track):
  """Add track to the play queue."""
  application.frame.queue.append(track)
  application.frame.update_labels()
+
+def seek(amount):
+ """Seek through the current track."""
+ application.stream.set_position(max(0, min(application.stream.get_length(), application.stream.get_position() + amount)))

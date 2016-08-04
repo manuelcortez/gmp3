@@ -9,7 +9,7 @@ from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login
-from functions.sound import play, get_previous, get_next, set_volume
+from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
 
@@ -68,6 +68,8 @@ class MainFrame(wx.Frame):
   s3.Add(wx.StaticText(p, label = '&Position'), 0, wx.GROW)
   self.position= wx.Slider(p, style = wx.SL_HORIZONTAL)
   self.position.Bind(wx.EVT_SLIDER, lambda event: application.stream.set_position((int(application.stream.get_length() / 100) * self.position.GetValue())) if application.stream else None)
+  add_accelerator(self, 'SHIFT+LEFT', self.rewind)
+  add_accelerator(self, 'SHIFT+RIGHT', self.fastforward)
   self.position_timer = wx.Timer(self)
   self.Bind(wx.EVT_TIMER, self.play_manager, self.position_timer)
   self.position_timer.Start(10)
@@ -92,6 +94,11 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
   mb.Append(pm, '&Play')
+  sm = wx.Menu()
+  self.playlists_menu = wx.Menu()
+  self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...', 'Load a playlist from google.'))
+  sm.AppendSubMenu(self.playlists_menu, '&Playlists', 'Select ocal or a remote playlist to view.')
+  mb.Append(sm, '&Source')
   self.options_menu = wx.Menu()
   for section in sections:
    self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s...' % section.title, 'Edit the %s configuration.' % section.title))
@@ -239,5 +246,23 @@ class MainFrame(wx.Frame):
   t = get_next(remove = True)
   if t:
    play(t)
+  else:
+   wx.Bell()
+ 
+ def load_remote_playlist(self, event):
+  """Load a playlist from Google."""
+  wx.MessageBox('Congrats', 'Remote Playlist', style = wx.ICON_EXCLAMATION)
+ 
+ def rewind(self, event):
+  """Rewind the current track."""
+  if application.stream:
+   seek(seek_amount * -1)
+  else:
+   wx.Bell()
+ 
+ def fastforward(self, event):
+  """Fastforward the currently playing stream."""
+  if application.stream:
+   seek(seek_amount)
   else:
    wx.Bell()
