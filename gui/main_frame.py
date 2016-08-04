@@ -4,13 +4,14 @@ from threading import Thread
 import wx, application
 from wxgoodies.keys import add_accelerator
 from db import list_to_objects, session, Track
-from config import save, system_config, sections
+from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login
 from functions.sound import play, get_previous, get_next, set_volume
 from .audio_options import AudioOptions
+from .track_menu import TrackMenu
 
 SEARCH_LABEL = '&Search'
 SEARCHING_LABEL = '&Searching...'
@@ -27,9 +28,11 @@ class MainFrame(wx.Frame):
   s = wx.BoxSizer(wx.VERTICAL)
   s1 = wx.BoxSizer(wx.HORIZONTAL)
   self.previous = wx.Button(p, label = '&Previous')
+  self.previous.Bind(wx.EVT_BUTTON, self.on_previous)
   self.play = wx.Button(p, label = PLAY_LABEL)
   self.play.Bind(wx.EVT_BUTTON, self.play_pause)
   self.next = wx.Button(p, label = '&Next')
+  self.next.Bind(wx.EVT_BUTTON, self.on_next)
   self.search_label = wx.StaticText(p, label = SEARCH_LABEL)
   self.search = wx.TextCtrl(p, style = wx.TE_PROCESS_ENTER)
   self.search.Bind(wx.EVT_TEXT_ENTER, lambda event: self.do_local_search(self.search.GetValue()) if self.offline_search.IsChecked() else self.do_remote_search(self.search.GetValue()))
@@ -45,7 +48,9 @@ class MainFrame(wx.Frame):
   vs.Add(wx.StaticText(p, label = '&Tracks'), 0, wx.GROW)
   self.view = wx.ListBox(p)
   add_accelerator(self.view, 'RETURN', self.on_activate)
+  add_accelerator(self.view, 'SPACE', self.play_pause)
   self.view.SetFocus()
+  self.view.Bind(wx.EVT_CONTEXT_MENU, self.on_context)
   vs.Add(self.view, 1, wx.GROW)
   ls = wx.BoxSizer(wx.VERTICAL)
   ls.Add(wx.StaticText(p, label = '&Lyrics'), 0, wx.GROW)
@@ -82,6 +87,8 @@ class MainFrame(wx.Frame):
   mb.Append(fm, '&File')
   pm = wx.Menu() # Play menu.
   self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
+  self.Bind(wx.EVT_MENU, self.on_previous, pm.Append(wx.ID_ANY, '&Previous Track\tCTRL+LEFT', 'Play the previous track.'))
+  self.Bind(wx.EVT_MENU, self.on_next, pm.Append(wx.ID_ANY, '&Next Track\tCTRL+RIGHT', 'Play the next track.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
   mb.Append(pm, '&Play')
@@ -105,7 +112,11 @@ class MainFrame(wx.Frame):
  
  def add_result(self, result):
   """Add a result to the view."""
-  self.view.Append(str(result))
+  self.view.Append(
+   interface_config['track_format'].format(
+    **{x: getattr(result, x) for x in dir(result) if not x.startswith('_')}
+   )
+  )
   self.results.append(result)
  
  def add_results(self, results, clear = True, focus = True):
@@ -113,12 +124,12 @@ class MainFrame(wx.Frame):
   if clear:
    self.view.Clear()
    self.results = []
-   for r in results:
-    self.add_result(r)
-   if focus:
-    self.view.SetFocus()
-   if clear:
-    self.update_labels()
+  for r in results:
+   self.add_result(r)
+  if focus:
+   self.view.SetFocus()
+  if clear:
+   self.update_labels()
  
  def do_remote_search(self, what):
   """Perform a searchon Google Play Music for what."""
@@ -127,8 +138,9 @@ class MainFrame(wx.Frame):
    try:
     results = [x['track'] for x in application.api.search(what)['song_hits']]
     def f2(results):
-     """Clear the results queue and re-enable the search box."""
-     self.search.Clear()
+     """Clear the search box and change it's label back to search_label."""
+     if results:
+      self.search.Clear()
      self.add_results(list_to_objects(results))
      self.search_label.SetLabel(SEARCH_LABEL)
    except NotLoggedIn:
@@ -171,6 +183,8 @@ class MainFrame(wx.Frame):
    return wx.Bell()
   else:
    play(self.results[cr])
+   if interface_config['clear_queue']:
+    self.queue = []
  
  def update_labels(self):
   """Update the labels of the previous and next buttons."""
@@ -200,5 +214,30 @@ class MainFrame(wx.Frame):
    else:
     application.stream.pause()
     self.play.SetLabel(PLAY_LABEL)
+  else:
+   wx.Bell()
+ 
+ def on_context(self, event):
+  """Context menu for tracks view."""
+  cr = self.view.GetSelection()
+  if cr == -1:
+   wx.Bell()
+  else:
+   self.PopupMenu(TrackMenu(self.results[cr]), wx.GetMousePosition())
+  event.Skip()
+ 
+ def on_previous(self, event):
+  """Play the previous track."""
+  t = get_previous()
+  if t:
+   play(t)
+  else:
+   wx.Bell()
+ 
+ def on_next(self, event):
+  """Play the next track."""
+  t = get_next(remove = True)
+  if t:
+   play(t)
   else:
    wx.Bell()

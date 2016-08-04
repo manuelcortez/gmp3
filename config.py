@@ -19,6 +19,8 @@ def save():
 
 create_config_dir()
 
+import db
+
 def make_dir_browser(dlg, label, value):
  """Create the control for the media directory selector."""
  ctrl = DirBrowseButton(dlg.panel, labelText = label)
@@ -45,6 +47,18 @@ login_config.names = {
  'uid': '&Username',
  'pwd': '&Password',
  'remember': '&Remember Credentials'
+}
+
+# Interface configuration.
+config['interface'] = config.get('interface', {})
+interface_config = config['interface']
+interface_config.title = 'Interface'
+spec = ConfigObj()
+spec['clear_queue'] = 'boolean(default = True)'
+spec['track_format'] = 'string(default = "{artist} - {album} - {number} - {title} ({duration})")'
+interface_config.configspec = spec
+interface_config.names = {
+ 'clear_queue': 'Clear The &Queue When Enter Is Pressed'
 }
 
 # Storage configuration.
@@ -87,7 +101,6 @@ config['db'] = config.get('db', {})
 db_config = config['db']
 db_config.title = 'Database'
 def db_config_updated():
- import db
  db.engine.echo = db_config['echo']
 db_config.config_updated = db_config_updated
 spec = ConfigObj()
@@ -108,6 +121,7 @@ max_frequency = 200000
 spec['frequency'] = 'integer(min = {}, max = {}, default = 44100)'.format(min_frequency, max_frequency)
 spec['pan'] = 'integer(min = 0, max = 100, default = 50)'
 spec['offline_search'] = 'boolean(default = False)'
+spec['repeat'] = 'option(0, 1, 2, default = 0)'
 system_config.configspec = spec
 
 def system_config_updated():
@@ -119,6 +133,7 @@ def system_config_updated():
 # Add all configuration sections to the below list in the order they should appear in the Options menu.
 sections = [
  login_config,
+ interface_config,
  storage_config,
  db_config
 ]

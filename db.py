@@ -1,7 +1,7 @@
 """Database specifics."""
 
 import os.path
-from config import db_config, storage_config
+from config import db_config, storage_config, interface_config
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
@@ -71,6 +71,10 @@ class Track(Base):
   """Return whether or not this track is downloaded."""
   return os.path.isfile(self.path)
  
+ @property
+ def number(self):
+  """Return the track number, padded with 0's."""
+  return '%s%s' % ('0' if self.track_number is not None and self.track_number < 10 else '', self.track_number)
  def populate(self, d):
   """Populate from a dictionary d."""
   self.album = d.get('album', 'Unknown Album')
@@ -112,3 +116,5 @@ def list_to_objects(l):
   track.populate(item)
   session.add(track)
   yield track
+
+interface_config.names['track_format'] = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])

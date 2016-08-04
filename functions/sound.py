@@ -72,3 +72,8 @@ def set_frequency(value):
  system_config['frequency'] = value
  if application.stream:
   application.stream.set_frequency(value)
+
+def queue(track):
+ """Add track to the play queue."""
+ application.frame.queue.append(track)
+ application.frame.update_labels()
