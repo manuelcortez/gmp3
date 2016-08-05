@@ -8,7 +8,7 @@ from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
-from functions.util import do_login
+from functions.util import do_login, format_track
 from functions.google import playlist_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, SHOWING_QUEUE, SHOWING_LIBRARY, SHOWING_SEARCH
 from .audio_options import AudioOptions
@@ -152,11 +152,7 @@ class MainFrame(wx.Frame):
  
  def add_result(self, result):
   """Add a result to the view."""
-  self.view.Append(
-   interface_config['track_format'].format(
-    **{x: getattr(result, x) for x in dir(result) if not x.startswith('_')}
-   )
-  )
+  self.view.Append(format_track(result))
   self.results.append(result)
  
  def load_results(self, results, *args, **kwargs):

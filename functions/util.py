@@ -2,6 +2,7 @@
 
 import application, wx
 from db import session, Playlist, list_to_objects
+from config import interface_config
 from gui.login_frame import LoginFrame
 from gmusicapi.exceptions import AlreadyLoggedIn
 from sqlalchemy.orm.exc import NoResultFound
@@ -52,3 +53,7 @@ def delete_playlist(playlist):
  except NotLoggedIn:
   do_login(callback = delete_playlist, args = [playlist])
   return True
+
+def format_track(track):
+ """Return track printed as the user likes."""
+ return interface_config['track_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})

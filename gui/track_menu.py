@@ -2,7 +2,7 @@
 
 import wx, application
 from functions.google import playlist_action, add_to_playlist
-from functions.util import do_login
+from functions.util import do_login, format_track
 from functions.sound import play, queue, unqueue
 from functions.network import download_track
 from db import session, Playlist
@@ -43,6 +43,16 @@ class TrackMenu(wx.Menu):
    return do_login(callback = self.download, args = [event], kwargs = {'track': track})
   download_track(url, track.path)
  
- def save_track(self, event):
+ def save_track(self, event, path = None):
   """Save the track to disk."""
-  
+  if path is None:
+   dlg = wx.FileDialog(None, message = 'Choose where to save the file', defaultFile = format_track(self.track) + '.mp3', style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+   if dlg.ShowModal() == wx.ID_OK:
+    path = dlg.GetPath()
+   dlg.Destroy()
+  if path:
+   try:
+    download_track(application.api.get_stream_url(self.track.id), path)
+   except NotLoggedIn:
+    do_login(callback = self.save_track, args = [event], kwargs = dict(path = path))
+ 
