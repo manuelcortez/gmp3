@@ -97,7 +97,8 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
   mb.Append(pm, '&Play')
   sm = wx.Menu()
-  self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all()), sm.Append(wx.ID_ANY, '&Catalogue', 'Load all songs which are stored in the local database.'))
+  self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_library,).start(), sm.Append(wx.ID_ANY, '&Library\tCTRL+L', 'Load every song in your Google Music library.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all()), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
   self.playlists_menu = wx.Menu()
   self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
   self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
@@ -166,6 +167,14 @@ class MainFrame(wx.Frame):
    self.view.SetFocus()
   if clear:
    self.update_labels()
+ 
+ def load_library(self):
+  """Load all the songs from the Google Music library."""
+  try:
+   lib = application.api.get_all_songs()
+   wx.CallAfter(self.load_results, lib)
+  except NotLoggedIn:
+   do_login(callback = self.load_library)
  
  def do_remote_search(self, what):
   """Perform a searchon Google Play Music for what."""

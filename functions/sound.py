@@ -80,6 +80,11 @@ def queue(track):
  application.frame.queue.append(track)
  application.frame.update_labels()
 
+def unqueue(track):
+ """Remove track from the queue."""
+ application.frame.queue.remove(track)
+ application.frame.update_labels()
+
 def seek(amount):
  """Seek through the current track."""
  application.stream.set_position(max(0, min(application.stream.get_length(), application.stream.get_position() + amount)))
