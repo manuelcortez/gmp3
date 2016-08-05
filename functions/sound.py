@@ -5,6 +5,7 @@ from threading import Thread
 from .util import do_login
 from .network import download_track
 from config import storage_config, system_config
+from showing import SHOWING_QUEUE
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 

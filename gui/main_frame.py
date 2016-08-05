@@ -4,12 +4,12 @@ import wx, application, showing
 from threading import Thread
 from six import string_types
 from wxgoodies.keys import add_accelerator
-from db import to_object, list_to_objects, session, Track, Playlist, Artist
+from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
 from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
-from functions.util import do_login, format_track
+from functions.util import do_login, format_track, load_station
 from functions.google import playlist_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from .audio_options import AudioOptions
@@ -105,9 +105,14 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(self.queue, showing = showing.SHOWING_QUEUE), sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all(), showing = showing.SHOWING_CATALOGUE), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
   self.playlists_menu = wx.Menu()
-  self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
+  self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', self.load_playlist]).start(), self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
   self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
   sm.AppendSubMenu(self.playlists_menu, '&Playlists', 'Select ocal or a remote playlist to view.')
+  self.stations_menu = wx.Menu()
+  self.Bind(wx.EVT_MENU, self.load_remote_station, self.stations_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+2', 'Load a readio station from Google.'))
+  self.delete_stations_menu = wx.Menu()
+  self.stations_menu.AppendSubMenu(self.delete_stations_menu, '&Delete')
+  sm.AppendSubMenu(self.stations_menu, '&Radio Stations', 'Locally stored and remote radio stations.')
   mb.Append(sm, '&Source')
   self.options_menu = wx.Menu()
   for section in sections:
@@ -119,6 +124,9 @@ class MainFrame(wx.Frame):
   self.playlists = {} # A list of playlist: id key: value pairs.
   for p in session.query(Playlist).all():
    self.add_playlist(p)
+  self.stations = {} # The same as .playlists except for radio stations.
+  for s in session.query(Station).all():
+   self.add_station(s)
   self.status = self.CreateStatusBar()
   self.status.SetStatusText('Nothing playing yet')
  
@@ -127,7 +135,19 @@ class MainFrame(wx.Frame):
   if playlist not in self.playlists:
    id = wx.NewId()
    self.playlists[playlist] = id
-   self.Bind(wx.EVT_MENU, lambda event, playlist = playlist: self.load_playlist(playlist), self.playlists_menu.Insert(0, id, '&%s' % playlist.name, playlist.description))
+   self.Bind(wx.EVT_MENU, lambda event, playlist = playlist: self.add_results(playlist.tracks, showing = playlist), self.playlists_menu.Insert(0, id, '&%s' % playlist.name, playlist.description))
+   return True
+  else:
+   return False
+ 
+ def add_station(self, station):
+  """Add playlist to the menu."""
+  if station not in self.stations:
+   id = wx.NewId()
+   delete_id = wx.NewId()
+   self.stations[station] = [id, delete_id]
+   self.Bind(wx.EVT_MENU, lambda event, station = station: self.load_station(station), self.stations_menu.Insert(0, id, '&%s' % station.name, 'Load the %s station.' % station.name))
+   self.Bind(wx.EVT_MENU, lambda event, station = station: self.delete_station(station), self.delete_stations_menu.Insert(0, delete_id, '&%s' % station.name, 'Delete the %s station' % station.name))
    return True
   else:
    return False
@@ -183,6 +203,8 @@ class MainFrame(wx.Frame):
    text = self.showing
   elif isinstance(self.showing, Playlist):
    text = 'Playlist: %s' % self.showing.name
+  elif isinstance(self.showing, Station):
+   text = 'Radio Station: %s' % self.showing.name
   elif isinstance(self.showing, Artist):
    text = 'Artist: %s' % self.showing
   else:
@@ -338,10 +360,26 @@ class MainFrame(wx.Frame):
   else:
    wx.Bell()
  
- def load_playlist(self, playlist):
-  """Load playlist."""
-  self.add_results(playlist.tracks, showing = playlist)
+ def load_remote_station(self, event):
+  """Load a station from google."""
+  try:
+   data = application.api.get_all_stations()
+   stations = []
+   for d in data:
+    stations.append(load_station(d))
+   dlg = wx.SingleChoiceDialog(self, 'Select a station to listen to', 'Radio Stations', choices = [x.name for x in stations])
+   if dlg.ShowModal() == wx.ID_OK:
+    Thread(target = self.load_station, args = [stations[dlg.GetSelection()]]).start()
+   dlg.Destroy()
+  except NotLoggedIn:
+   do_login(callback = self.load_remote_station, args = [event])
  
- def load_remote_playlist(self, event):
-  """Load a playlist from Google."""
-  Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', self.load_playlist]).start()
+ def load_station(self, station):
+  """Load a station's tracks."""
+  try:
+   wx.CallAfter(self.add_results, application.api.get_station_tracks(station.id), showing = station)
+  except NotLoggedIn:
+   do_login(callback = self.load_station, args = [station])
+ 
+ def delete_station(self, station):
+  print(station.name)

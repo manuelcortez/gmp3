@@ -1,7 +1,7 @@
 """Utility functions."""
 
 import application, wx
-from db import session, Playlist, list_to_objects
+from db import session, Playlist, Station, list_to_objects
 from config import interface_config
 from gui.login_frame import LoginFrame
 from gmusicapi.exceptions import AlreadyLoggedIn
@@ -57,3 +57,15 @@ def delete_playlist(playlist):
 def format_track(track):
  """Return track printed as the user likes."""
  return interface_config['track_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})
+
+def load_station(station):
+ """Return a Station object from a dictionary."""
+ try:
+  s = session.query(Station).filter(Station.id == station['id']).one()
+ except NoResultFound:
+  s = Station()
+ session.add(s)
+ s.id = station['id']
+ s.name = station.get('name', 'Untitled Radio Station')
+ application.frame.add_station(s)
+ return s
