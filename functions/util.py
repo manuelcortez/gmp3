@@ -25,12 +25,13 @@ def load_playlist(playlist):
   p = Playlist()
   p.id = playlist['id']
  session.add(p)
- p.name = playlist['name']
- p.description = playlist['description']
+ p.name = playlist.get('name', 'Untitled Playlist')
+ p.description = playlist.get('description', '')
  p.tracks = []
  for t in list_to_objects([x['track'] for x in playlist.get('tracks', []) if 'track' in x]):
   p.tracks.append(t)
  session.commit()
+ application.frame.add_playlist(p)
  return p
 
 def do_error(message, title = 'Error'):

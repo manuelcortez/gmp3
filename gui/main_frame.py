@@ -8,7 +8,8 @@ from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
-from functions.util import do_login, load_playlist
+from functions.util import do_login
+from functions.google import playlist_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
@@ -96,6 +97,7 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
   mb.Append(pm, '&Play')
   sm = wx.Menu()
+  self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all()), sm.Append(wx.ID_ANY, '&Catalogue', 'Load all songs which are stored in the local database.'))
   self.playlists_menu = wx.Menu()
   self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
   self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
@@ -293,21 +295,4 @@ class MainFrame(wx.Frame):
  
  def load_remote_playlist(self, event):
   """Load a playlist from Google."""
-  def get_playlists():
-   """Get the list of playlists from Google."""
-   try:
-    wx.CallAfter(select_playlist, application.api.get_all_user_playlist_contents())
-   except NotLoggedIn:
-    do_login(callback = get_playlists)
-  def select_playlist(playlists):
-   """Get the contents of the right playlist."""
-   def _load_playlist(playlist):
-    """Load a playlist into the frame."""
-    p = load_playlist(playlist)
-    self.add_playlist(p)
-    self.add_results(p.tracks)
-   dlg = wx.SingleChoiceDialog(self, 'Select a playlist to load', 'Playlist Selection', [x.get('name', 'Unnamed Playlist') for x in playlists])
-   if dlg.ShowModal() == wx.ID_OK:
-    wx.CallAfter(_load_playlist, playlists[dlg.GetSelection()])
-   dlg.Destroy()
-  Thread(target = get_playlists).start()
+  Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', lambda p: self.add_results(p.tracks)]).start()
