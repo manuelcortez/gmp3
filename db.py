@@ -113,16 +113,20 @@ class Track(Base):
  def __str__(self):
   return '{0.artist} - {0.title}'.format(self)
 
+def to_object(item):
+ """Return item as a Track object."""
+ try:
+  track = session.query(Track).filter(Track.id == get_id(item)).one()
+ except exc.NoResultFound:
+  track = Track()
+  track.populate(item)
+ session.add(track)
+ return track
+
 def list_to_objects(l):
  """Return a list of database objects seeded from a list l."""
  for item in l:
-  try:
-   track = session.query(Track).filter(Track.id == get_id(item)).one()
-  except exc.NoResultFound:
-   track = Track()
-  track.populate(item)
-  session.add(track)
-  yield track
+  yield to_object(item)
 
 interface_config.names['track_format'] = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])
 
@@ -133,3 +137,9 @@ class Playlist(Base):
  name = Column(String(length = 500), nullable = False)
  description = Column(String(length = 10000), nullable = False)
  tracks = relationship('Track', secondary = playlist_tracks)
+
+class Station(Base):
+ __tablename__ = 'stations'
+ key = Column(Integer(), primary_key = True)
+ id = Column(String(length = 30), nullable = False)
+ name = Column(String(length = 500), nullable = False)

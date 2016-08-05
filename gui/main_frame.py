@@ -1,16 +1,17 @@
 """The main frame."""
 
-import wx, application
+import wx, application, showing
 from threading import Thread
+from six import string_types
 from wxgoodies.keys import add_accelerator
-from db import list_to_objects, session, Track, Playlist
+from db import to_object, list_to_objects, session, Track, Playlist, Artist
 from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login, format_track
 from functions.google import playlist_action
-from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, SHOWING_QUEUE, SHOWING_LIBRARY, SHOWING_SEARCH
+from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
 from .edit_playlist_frame import EditPlaylistFrame
@@ -24,7 +25,8 @@ class MainFrame(wx.Frame):
  """The main frame."""
  def __init__(self, *args, **kwargs):
   super(MainFrame, self).__init__(*args, **kwargs)
-  self.showing = None # Set it to the currently showing playlist or one of the SHOWING_* constants from functions.sound.
+  self.autoload = [] # Tracks to autoload in order.
+  self.showing = None # Set it to the currently showing playlist or one of the showing.* constants from functions.sound.
   self.queue = [] # The play queue.
   self.results = []
   p = wx.Panel(self)
@@ -99,8 +101,9 @@ class MainFrame(wx.Frame):
   mb.Append(pm, '&Play')
   sm = wx.Menu()
   self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_library,).start(), sm.Append(wx.ID_ANY, '&Library\tCTRL+L', 'Load every song in your Google Music library.'))
-  self.Bind(wx.EVT_MENU, self.show_queue, sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all()), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
+  self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_promoted_songs).start(), sm.Append(wx.ID_ANY, 'Promoted &Songs\tCTRL+P', 'Load promoted songs.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.add_results(self.queue, showing = showing.SHOWING_QUEUE), sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all(), showing = showing.SHOWING_CATALOGUE), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
   self.playlists_menu = wx.Menu()
   self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
   self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
@@ -116,11 +119,8 @@ class MainFrame(wx.Frame):
   self.playlists = {} # A list of playlist: id key: value pairs.
   for p in session.query(Playlist).all():
    self.add_playlist(p)
- 
- def show_queue(self, event):
-  """Show the play queue."""
-  self.add_results(self.queue)
-  self.showing = SHOWING_QUEUE
+  self.status = self.CreateStatusBar()
+  self.status.SetStatusText('Nothing playing yet')
  
  def add_playlist(self, playlist):
   """Add playlist to the menu."""
@@ -150,6 +150,10 @@ class MainFrame(wx.Frame):
    title = 'Not Playing'
   super(MainFrame, self).SetTitle('%s - %s' % (application.name, title))
  
+ def load_result(self, result):
+  """Load a result from a dictionary."""
+  self.add_result(to_object(result))
+ 
  def add_result(self, result):
   """Add a result to the view."""
   self.view.Append(format_track(result))
@@ -159,39 +163,59 @@ class MainFrame(wx.Frame):
   """Given a list of tracks results, load them into the database and then into add_results along with args and kwargs."""
   self.add_results(list_to_objects(results), *args, **kwargs)
  
- def add_results(self, results, clear = True, focus = True):
+ def add_results(self, results, clear = True, focus = True, showing = None):
   """Add results to the view."""
+  self.showing = showing
   if clear:
    self.view.Clear()
    self.results = []
+   self.autoload = []
   for r in results:
-   self.add_result(r)
+   self.autoload.append(r)
   if focus:
    self.view.SetFocus()
   if clear:
    self.update_labels()
  
+ def update_status(self):
+  """Update the text on the status bar."""
+  if isinstance(self.showing, string_types):
+   text = self.showing
+  elif isinstance(self.showing, Playlist):
+   text = 'Playlist: %s' % self.showing.name
+  elif isinstance(self.showing, Artist):
+   text = 'Artist: %s' % self.showing
+  else:
+   text = 'Unknown [%s]' % self.showing
+  self.status.SetStatusText('%s (%s %s)' % (text, len(self.results), 'song' if len(self.results) == 1 else 'songs'))
+ 
  def load_library(self):
   """Load all the songs from the Google Music library."""
   try:
    lib = application.api.get_all_songs()
-   self.showing = SHOWING_LIBRARY
-   wx.CallAfter(self.load_results, lib)
+   wx.CallAfter(self.add_results, lib, showing = showing.SHOWING_LIBRARY)
   except NotLoggedIn:
    do_login(callback = self.load_library)
+ 
+ def load_promoted_songs(self):
+  """Load promoted songs from Google."""
+  try:
+   songs = application.api.get_promoted_songs()
+   wx.CallAfter(self.load_results, songs, showing = showing.SHOWING_PROMOTED)
+  except NotLoggedIn:
+   do_login(callback = self.load_promoted_songs)
  
  def do_remote_search(self, what):
   """Perform a searchon Google Play Music for what."""
   def f(what):
    """Get the results and pass them onto f2."""
    try:
-    results = [x['track'] for x in application.api.search(what)['song_hits']]
+    results = [x['track'] for x in application.api.search(what, max_results = interface_config['results'])['song_hits']]
     def f2(results):
      """Clear the search box and change it's label back to search_label."""
      if results:
       self.search.Clear()
-     self.showing = SHOWING_SEARCH
-     self.load_results(results)
+     self.load_results(results, showing = showing.SHOWING_SEARCH_REMOTE)
      self.search_label.SetLabel(SEARCH_LABEL)
    except NotLoggedIn:
     def f2(results):
@@ -213,8 +237,7 @@ class MainFrame(wx.Frame):
     func.lower(Track.album).like(what)
    )
   ).all()
-  self.showing = SHOWING_SEARCH
-  self.add_results(results)
+  self.add_results(results, showing = showing.SHOWING_SEARCH_LOCAL)
  
  def on_close(self, event):
   """Close the window."""
@@ -247,6 +270,13 @@ class MainFrame(wx.Frame):
  
  def play_manager(self, event):
   """Manage the currently playing track."""
+  if self.autoload:
+   t = self.autoload.pop(0)
+   if isinstance(t, dict):
+    self.load_result(t)
+   else:
+    self.add_result(t)
+   self.update_status()
   if application.stream:
    pos = application.stream.get_position()
    length = application.stream.get_length()
@@ -310,8 +340,7 @@ class MainFrame(wx.Frame):
  
  def load_playlist(self, playlist):
   """Load playlist."""
-  self.showing = playlist
-  self.add_results(playlist.tracks)
+  self.add_results(playlist.tracks, showing = playlist)
  
  def load_remote_playlist(self, event):
   """Load a playlist from Google."""

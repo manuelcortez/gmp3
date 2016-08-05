@@ -1,5 +1,5 @@
 #pip install -U --trusted-host wxpython.org --pre -f http://wxpython.org/Phoenix/snapshot-builds/ wxPython_Phoenix
-#easy_install http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20220/pywin32-220.win32-py3.5.exe?r=&ts=1468360577&use_mirror=ufpr
+pypiwin32
 hg+http://hg.q-continuum.net/platform_utils#egg=platform_utils
 hg+https://hg.q-continuum.net/libloader#egg=libloader
 hg+http://hg.q-continuum.net/accessible_output2
@@ -11,3 +11,4 @@ sqlalchemy
 gmusicapi
 requests
 git+https://github.com/chrisnorman7/default_argparse.git#egg=default_argparse
+six

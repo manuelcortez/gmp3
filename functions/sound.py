@@ -9,9 +9,6 @@ from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
 seek_amount = 100000
-SHOWING_QUEUE = 'queue'
-SHOWING_LIBRARY = 'library'
-SHOWING_SEARCH = 'search'
 
 def play(track):
  """Play a track."""
