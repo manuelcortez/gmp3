@@ -9,6 +9,9 @@ from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
 seek_amount = 100000
+SHOWING_QUEUE = 'queue'
+SHOWING_LIBRARY = 'library'
+SHOWING_SEARCH = 'search'
 
 def play(track):
  """Play a track."""
@@ -79,11 +82,15 @@ def queue(track):
  """Add track to the play queue."""
  application.frame.queue.append(track)
  application.frame.update_labels()
+ if application.frame.showing == SHOWING_QUEUE:
+  application.frame.add_result(track)
 
 def unqueue(track):
  """Remove track from the queue."""
  application.frame.queue.remove(track)
  application.frame.update_labels()
+ if application.frame.showing == SHOWING_QUEUE:
+  application.frame.view.Delete(application.frame.results.index(track))
 
 def seek(amount):
  """Seek through the current track."""

@@ -10,7 +10,7 @@ from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login
 from functions.google import playlist_action
-from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
+from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, SHOWING_QUEUE, SHOWING_LIBRARY, SHOWING_SEARCH
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
 from .edit_playlist_frame import EditPlaylistFrame
@@ -24,6 +24,7 @@ class MainFrame(wx.Frame):
  """The main frame."""
  def __init__(self, *args, **kwargs):
   super(MainFrame, self).__init__(*args, **kwargs)
+  self.showing = None # Set it to the currently showing playlist or one of the SHOWING_* constants from functions.sound.
   self.queue = [] # The play queue.
   self.results = []
   p = wx.Panel(self)
@@ -98,6 +99,7 @@ class MainFrame(wx.Frame):
   mb.Append(pm, '&Play')
   sm = wx.Menu()
   self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_library,).start(), sm.Append(wx.ID_ANY, '&Library\tCTRL+L', 'Load every song in your Google Music library.'))
+  self.Bind(wx.EVT_MENU, self.show_queue, sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all()), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
   self.playlists_menu = wx.Menu()
   self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
@@ -115,12 +117,17 @@ class MainFrame(wx.Frame):
   for p in session.query(Playlist).all():
    self.add_playlist(p)
  
+ def show_queue(self, event):
+  """Show the play queue."""
+  self.add_results(self.queue)
+  self.showing = SHOWING_QUEUE
+ 
  def add_playlist(self, playlist):
   """Add playlist to the menu."""
   if playlist not in self.playlists:
    id = wx.NewId()
    self.playlists[playlist] = id
-   self.Bind(wx.EVT_MENU, lambda event, playlist = playlist: self.add_results(playlist.tracks), self.playlists_menu.Insert(0, id, '&%s' % playlist.name, playlist.description))
+   self.Bind(wx.EVT_MENU, lambda event, playlist = playlist: self.load_playlist(playlist), self.playlists_menu.Insert(0, id, '&%s' % playlist.name, playlist.description))
    return True
   else:
    return False
@@ -172,6 +179,7 @@ class MainFrame(wx.Frame):
   """Load all the songs from the Google Music library."""
   try:
    lib = application.api.get_all_songs()
+   self.showing = SHOWING_LIBRARY
    wx.CallAfter(self.load_results, lib)
   except NotLoggedIn:
    do_login(callback = self.load_library)
@@ -186,6 +194,7 @@ class MainFrame(wx.Frame):
      """Clear the search box and change it's label back to search_label."""
      if results:
       self.search.Clear()
+     self.showing = SHOWING_SEARCH
      self.load_results(results)
      self.search_label.SetLabel(SEARCH_LABEL)
    except NotLoggedIn:
@@ -208,6 +217,7 @@ class MainFrame(wx.Frame):
     func.lower(Track.album).like(what)
    )
   ).all()
+  self.showing = SHOWING_SEARCH
   self.add_results(results)
  
  def on_close(self, event):
@@ -302,6 +312,11 @@ class MainFrame(wx.Frame):
   else:
    wx.Bell()
  
+ def load_playlist(self, playlist):
+  """Load playlist."""
+  self.showing = playlist
+  self.add_results(playlist.tracks)
+ 
  def load_remote_playlist(self, event):
   """Load a playlist from Google."""
-  Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', lambda p: self.add_results(p.tracks)]).start()
+  Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', self.load_playlist]).start()
