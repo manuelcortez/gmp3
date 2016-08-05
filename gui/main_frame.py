@@ -1,19 +1,20 @@
 """The main frame."""
 
-from threading import Thread
 import wx, application
+from threading import Thread
 from wxgoodies.keys import add_accelerator
-from db import list_to_objects, session, Track
+from db import list_to_objects, session, Track, Playlist
 from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
-from functions.util import do_login
+from functions.util import do_login, load_playlist
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
+from .edit_playlist_frame import EditPlaylistFrame
 
-SEARCH_LABEL = '&Search'
+SEARCH_LABEL = '&Find'
 SEARCHING_LABEL = '&Searching...'
 PLAY_LABEL = '&Play'
 PAUSE_LABEL = '&Pause'
@@ -96,7 +97,8 @@ class MainFrame(wx.Frame):
   mb.Append(pm, '&Play')
   sm = wx.Menu()
   self.playlists_menu = wx.Menu()
-  self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...', 'Load a playlist from google.'))
+  self.Bind(wx.EVT_MENU, self.load_remote_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
+  self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
   sm.AppendSubMenu(self.playlists_menu, '&Playlists', 'Select ocal or a remote playlist to view.')
   mb.Append(sm, '&Source')
   self.options_menu = wx.Menu()
@@ -106,6 +108,27 @@ class MainFrame(wx.Frame):
   mb.Append(self.options_menu, '&Options')
   self.SetMenuBar(mb)
   self.Bind(wx.EVT_SHOW, self.on_show)
+  self.playlists = {} # A list of playlist: id key: value pairs.
+  for p in session.query(Playlist).all():
+   self.add_playlist(p)
+ 
+ def add_playlist(self, playlist):
+  """Add playlist to the menu."""
+  if playlist not in self.playlists:
+   id = wx.NewId()
+   self.playlists[playlist] = id
+   self.Bind(wx.EVT_MENU, lambda event, playlist = playlist: self.add_results(playlist.tracks), self.playlists_menu.Insert(0, id, '&%s' % playlist.name, playlist.description))
+   return True
+  else:
+   return False
+ 
+ def edit_playlist(self, event):
+  """Delete a playlist from the local database."""
+  playlists = list(self.playlists.keys())
+  dlg = wx.SingleChoiceDialog(self, 'Select a playlist to edit', 'Edit Playlist', choices = [x.name for x in playlists])
+  if dlg.ShowModal() == wx.ID_OK:
+   EditPlaylistFrame(playlists[dlg.GetSelection()]).Show(True)
+  dlg.Destroy()
  
  def on_show(self, event):
   """Show the window."""
@@ -125,6 +148,10 @@ class MainFrame(wx.Frame):
    )
   )
   self.results.append(result)
+ 
+ def load_results(self, results, *args, **kwargs):
+  """Given a list of tracks results, load them into the database and then into add_results along with args and kwargs."""
+  self.add_results(list_to_objects(results), *args, **kwargs)
  
  def add_results(self, results, clear = True, focus = True):
   """Add results to the view."""
@@ -148,7 +175,7 @@ class MainFrame(wx.Frame):
      """Clear the search box and change it's label back to search_label."""
      if results:
       self.search.Clear()
-     self.add_results(list_to_objects(results))
+     self.load_results(results)
      self.search_label.SetLabel(SEARCH_LABEL)
    except NotLoggedIn:
     def f2(results):
@@ -174,6 +201,7 @@ class MainFrame(wx.Frame):
  
  def on_close(self, event):
   """Close the window."""
+  application.running = False
   self.position_timer.Stop()
   if application.stream:
    application.stream.stop()
@@ -249,10 +277,6 @@ class MainFrame(wx.Frame):
   else:
    wx.Bell()
  
- def load_remote_playlist(self, event):
-  """Load a playlist from Google."""
-  wx.MessageBox('Congrats', 'Remote Playlist', style = wx.ICON_EXCLAMATION)
- 
  def rewind(self, event):
   """Rewind the current track."""
   if application.stream:
@@ -266,3 +290,24 @@ class MainFrame(wx.Frame):
    seek(seek_amount)
   else:
    wx.Bell()
+ 
+ def load_remote_playlist(self, event):
+  """Load a playlist from Google."""
+  def get_playlists():
+   """Get the list of playlists from Google."""
+   try:
+    wx.CallAfter(select_playlist, application.api.get_all_user_playlist_contents())
+   except NotLoggedIn:
+    do_login(callback = get_playlists)
+  def select_playlist(playlists):
+   """Get the contents of the right playlist."""
+   def _load_playlist(playlist):
+    """Load a playlist into the frame."""
+    p = load_playlist(playlist)
+    self.add_playlist(p)
+    self.add_results(p.tracks)
+   dlg = wx.SingleChoiceDialog(self, 'Select a playlist to load', 'Playlist Selection', [x.get('name', 'Unnamed Playlist') for x in playlists])
+   if dlg.ShowModal() == wx.ID_OK:
+    wx.CallAfter(_load_playlist, playlists[dlg.GetSelection()])
+   dlg.Destroy()
+  Thread(target = get_playlists).start()

@@ -22,6 +22,12 @@ artist_tracks = Table('artist_tracks',
  Column('track_key', Integer(), ForeignKey('tracks.key'))
 )
 
+playlist_tracks = Table('playlist_tracks',
+ Base.metadata,
+ Column('playlist_key', Integer(), ForeignKey('playlists.key')),
+ Column('track_key', Integer(), ForeignKey('tracks.key'))
+)
+
 class Artist(Base):
  __tablename__ = 'artists'
  key = Column(Integer(), primary_key = True)
@@ -57,6 +63,7 @@ class Track(Base):
  last_played = Column(DateTime(), nullable = False)
  lyrics = Column(String(length = 100000), nullable = True)
  play_count = Column(Integer(), nullable = False)
+ playlists = relationship('Playlist', secondary = playlist_tracks)
  title = Column(String(length = 200), nullable = False)
  track_number = Column(Integer(), nullable = False)
  year = Column(Integer(), nullable = False)
@@ -118,3 +125,11 @@ def list_to_objects(l):
   yield track
 
 interface_config.names['track_format'] = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])
+
+class Playlist(Base):
+ __tablename__ = 'playlists'
+ key = Column(Integer(), primary_key = True)
+ id = Column(String(length = 30), nullable = False)
+ name = Column(String(length = 500), nullable = False)
+ description = Column(String(length = 10000), nullable = False)
+ tracks = relationship('Track', secondary = playlist_tracks)
