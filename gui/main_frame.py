@@ -2,6 +2,7 @@
 
 import wx, application, showing
 from threading import Thread
+from random import shuffle
 from six import string_types
 from wxgoodies.keys import add_accelerator
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
@@ -98,6 +99,7 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, self.on_next, pm.Append(wx.ID_ANY, '&Next Track\tCTRL+RIGHT', 'Play the next track.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
+  self.Bind(wx.EVT_MENU, self.on_shuffle, pm.Append(wx.ID_ANY, '&Shuffle\tCTRL+H', 'Shuffle the current view.'))
   mb.Append(pm, '&Play')
   sm = wx.Menu()
   self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_library,).start(), sm.Append(wx.ID_ANY, '&Library\tCTRL+L', 'Load every song in your Google Music library.'))
@@ -397,5 +399,9 @@ class MainFrame(wx.Frame):
   except NotLoggedIn:
    do_login(callback = self.load_station, args = [station])
  
- def do_delete_station(self, station):
-  print(station.name)
+ def on_shuffle(self, event):
+  """Shuffle tracks."""
+  self.autoload = []
+  shuffle(self.results)
+  self.add_results(self.results)
+  
