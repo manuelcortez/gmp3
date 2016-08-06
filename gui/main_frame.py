@@ -178,6 +178,8 @@ class MainFrame(wx.Frame):
   """Add a result to the view."""
   self.view.Append(format_track(result))
   self.results.append(result)
+  if self.view.GetSelection() == -1:
+   self.view.SetSelection(0)
  
  def load_results(self, results, *args, **kwargs):
   """Given a list of tracks results, load them into the database and then into add_results along with args and kwargs."""
