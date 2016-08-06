@@ -10,7 +10,7 @@ from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login, format_track, load_station
-from functions.google import playlist_action
+from functions.google import playlist_action, delete_station
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
@@ -105,7 +105,7 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(self.queue, showing = showing.SHOWING_QUEUE), sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all(), showing = showing.SHOWING_CATALOGUE), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
   self.playlists_menu = wx.Menu()
-  self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', self.load_playlist]).start(), self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
+  self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', lambda playlist: wx.CallAfter(self.add_results, playlist.tracks, showing = playlist)]).start(), self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
   self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
   sm.AppendSubMenu(self.playlists_menu, '&Playlists', 'Select ocal or a remote playlist to view.')
   self.stations_menu = wx.Menu()
@@ -147,7 +147,7 @@ class MainFrame(wx.Frame):
    delete_id = wx.NewId()
    self.stations[station] = [id, delete_id]
    self.Bind(wx.EVT_MENU, lambda event, station = station: self.load_station(station), self.stations_menu.Insert(0, id, '&%s' % station.name, 'Load the %s station.' % station.name))
-   self.Bind(wx.EVT_MENU, lambda event, station = station: self.delete_station(station), self.delete_stations_menu.Insert(0, delete_id, '&%s' % station.name, 'Delete the %s station' % station.name))
+   self.Bind(wx.EVT_MENU, lambda event, station = station: delete_station(station) if wx.MessageBox('Are you sure you want to delete the %s station?' % station.name, 'Are You Sure?', style = wx.ICON_QUESTION | wx.YES_NO) == wx.YES else None, self.delete_stations_menu.Insert(0, delete_id, '&%s' % station.name, 'Delete the %s station' % station.name))
    return True
   else:
    return False
@@ -381,5 +381,5 @@ class MainFrame(wx.Frame):
   except NotLoggedIn:
    do_login(callback = self.load_station, args = [station])
  
- def delete_station(self, station):
+ def do_delete_station(self, station):
   print(station.name)

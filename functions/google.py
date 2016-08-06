@@ -1,7 +1,8 @@
 """Goele functions."""
 
 import application, wx
-from .util import do_login, load_playlist
+from .util import do_login, load_playlist, do_error
+from db import session
 from gmusicapi.exceptions import NotLoggedIn
 
 def localise_playlists(playlists):
@@ -27,3 +28,17 @@ def add_to_playlist(playlist, *tracks):
  """Add track to playlist."""
  playlist.tracks += tracks
  application.api.add_songs_to_playlist(playlist.id, [x.id for x in tracks])
+
+def delete_station(station):
+ """Delete a station both from Google and the local database."""
+ try:
+  ids = application.api.delete_stations([station.id])
+  if ids != [station.id]:
+   do_error('Failed to delete the %s station.' % station.name)
+  session.delete(station)
+  if station in application.frame.stations:
+   id, delete_id = application.frame.stations[station]
+   application.frame.stations_menu.Delete(id)
+   application.frame.delete_stations_menu.Delete(delete_id)
+ except NotLoggedIn:
+  do_login(callback = delete_station, args = [station])

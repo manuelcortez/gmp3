@@ -26,7 +26,7 @@ class EditPlaylistFrame(SizedFrame):
  
  def on_delete(self, event):
   """Delete this playlist."""
-  if wx.MessageBox('Are you sure you want to delete the %s playlist?' % self.playlist.name, 'Really Delete', style = wx.ICON_EXCLAMATION | wx.YES_NO) == wx.YES:
+  if wx.MessageBox('Are you sure you want to delete the %s playlist?' % self.playlist.name, 'Really Delete', style = wx.ICON_QUESTION | wx.YES_NO) == wx.YES:
    if delete_playlist(self.playlist):
     self.Close(True)
    else:
