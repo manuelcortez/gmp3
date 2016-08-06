@@ -81,14 +81,14 @@ def queue(track):
  application.frame.queue.append(track)
  application.frame.update_labels()
  if application.frame.showing == SHOWING_QUEUE:
-  application.frame.add_result(track)
+  application.frame.add_results([track], clear = False)
 
 def unqueue(track):
  """Remove track from the queue."""
  application.frame.queue.remove(track)
  application.frame.update_labels()
  if application.frame.showing == SHOWING_QUEUE:
-  application.frame.view.Delete(application.frame.results.index(track))
+  application.frame.remove_result(track)
 
 def seek(amount):
  """Seek through the current track."""

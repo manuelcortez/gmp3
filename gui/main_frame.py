@@ -185,6 +185,8 @@ class MainFrame(wx.Frame):
  
  def add_results(self, results, clear = True, focus = True, showing = None):
   """Add results to the view."""
+  if showing is None:
+   showing = self.showing
   self.showing = showing
   if clear:
    self.view.Clear()
@@ -196,6 +198,18 @@ class MainFrame(wx.Frame):
    self.view.SetFocus()
   if clear:
    self.update_labels()
+ 
+ def remove_result(self, result):
+  """Remove a result given as a Track object or an integer."""
+  if isinstance(result, Track):
+   pos = self.results.index(result)
+   self.view.Delete(pos)
+   del self.results[pos]
+  elif isinstance(result, int):
+   self.view.Delete(result)
+   del self.results[result]
+  else:
+   return TypeError('result must be given as either a Track object or an integer.')
  
  def update_status(self):
   """Update the text on the status bar."""

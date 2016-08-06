@@ -6,6 +6,7 @@ from functions.util import do_login, format_track
 from functions.sound import play, queue, unqueue
 from functions.network import download_track
 from db import session, Playlist
+from showing import SHOWING_LIBRARY
 from gmusicapi.exceptions import NotLoggedIn
 from threading import Thread
 
@@ -19,12 +20,8 @@ class TrackMenu(wx.Menu):
   unqueue_item = self.Append(wx.ID_ANY, '&Unqueue Track', 'Remove the track from the play queue.')
   self.Bind(wx.EVT_MENU, lambda event: unqueue(track), unqueue_item)
   unqueue_item.Enable(track in application.frame.queue)
-  download = self.Append(wx.ID_ANY, '&Downloaded' if track.downloaded else '&Download', 'Download %s.' % track)
-  if track.downloaded:
-   download.Enable(False)
-  else:
-   self.Bind(wx.EVT_MENU, self.download, download)
-  self.Bind(wx.EVT_MENU, self.save_track, self.Append(wx.ID_ANY, '&Save Track...', 'Save the track to disk.'))
+  self.Bind(wx.EVT_MENU, self.add_to_library, self.Append(wx.ID_ANY, 'Add To &Library', 'Add the track to the library.'))
+  self.Bind(wx.EVT_MENU, self.remove_from_library, self.Append(wx.ID_ANY, '&Remove From Library', 'Remove the track from the library.'))
   playlists_menu = wx.Menu()
   playlists = session.query(Playlist).all()
   if playlists:
@@ -37,6 +34,13 @@ class TrackMenu(wx.Menu):
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(1), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Down', 'Thumbs down this track.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(5), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Up', 'Thumbs up this track.'))
   self.AppendSubMenu(ratings_menu, '&Rating', 'Rate the track.')
+  download = self.Append(wx.ID_ANY, '&Downloaded' if track.downloaded else '&Download', 'Download %s.' % track)
+  if track.downloaded:
+   download.Enable(False)
+  else:
+   self.Bind(wx.EVT_MENU, self.download, download)
+  self.Bind(wx.EVT_MENU, self.save_track, self.Append(wx.ID_ANY, '&Save Track...', 'Save the track to disk.'))
+  self.Bind(wx.EVT_MENU, self.reload, self.Append(wx.ID_ANY, '&Reindex', 'Reindex the track from Google.'))
  
  def download(self, event, track = None):
   """Download was clicked."""
@@ -64,3 +68,26 @@ class TrackMenu(wx.Menu):
  def add_rating(self, rating):
   """Rate the current track."""
   wx.MessageBox('Due to an error in the API ratings do not currently work.', 'Watch This Space', style = wx.ICON_EXCLAMATION)
+ 
+ def add_to_library(self, event):
+  """Add the current song to the library."""
+  do_login(callback = application.api.add_store_track, args = [self.track.store_id])
+  if application.frame.showing == SHOWING_LIBRARY:
+   try:
+    application.frame.remove_result(self.track)
+   except ValueError:
+    pass # It's not in the list after all.
+   application.frame.add_results([self.track], clear = False)
+ 
+ def remove_from_library(self, event):
+  """Remove this track from the library."""
+  do_login(callback = application.api.delete_songs, args = [self.track.id])
+  if application.frame.showing == SHOWING_LIBRARY:
+   application.frame.remove_result(self.track)
+ 
+ def reload(self, event):
+  """Reload the track from google."""
+  try:
+   self.track.populate(application.api.get_track_info(self.track.id))
+  except NotLoggedIn:
+   do_login(callback = self.reload, args = [event])
