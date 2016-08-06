@@ -32,6 +32,11 @@ class TrackMenu(wx.Menu):
     self.Bind(wx.EVT_MENU, lambda event, playlist = p: add_to_playlist(playlist, self.track), playlists_menu.Append(wx.ID_ANY, '&%s' % p.name, p.description))
   self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to add this track to', 'Select a playlist', add_to_playlist, self.track]).start(), playlists_menu.Append(wx.ID_ANY, '&Remote', 'Add this track to a remote playlist.'))
   self.AppendSubMenu(playlists_menu, '&Add To Playlist', 'Add this track to one of your playlists.')
+  ratings_menu = wx.Menu()
+  self.Bind(wx.EVT_MENU, lambda event: self.add_rating(0), ratings_menu.Append(wx.ID_ANY, '&Unthumb', 'Unrate the track.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.add_rating(1), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Down', 'Thumbs down this track.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.add_rating(5), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Up', 'Thumbs up this track.'))
+  self.AppendSubMenu(ratings_menu, '&Rating', 'Rate the track.')
  
  def download(self, event, track = None):
   """Download was clicked."""
@@ -55,4 +60,7 @@ class TrackMenu(wx.Menu):
     download_track(application.api.get_stream_url(self.track.id), path)
    except NotLoggedIn:
     do_login(callback = self.save_track, args = [event], kwargs = dict(path = path))
- 
+  
+ def add_rating(self, rating):
+  """Rate the current track."""
+  wx.MessageBox('Due to an error in the API ratings do not currently work.', 'Watch This Space', style = wx.ICON_EXCLAMATION)

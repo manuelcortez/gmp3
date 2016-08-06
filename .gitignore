@@ -92,4 +92,4 @@ ENV/
 creds.ini
 *.sqlite3
 *.db
-convenient.py
+x.py
