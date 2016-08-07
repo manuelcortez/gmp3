@@ -2,7 +2,7 @@
 
 import application, wx
 from .util import do_login, load_playlist, do_error
-from db import session
+from db import session, PlaylistEntry
 from gmusicapi.exceptions import NotLoggedIn
 
 def localise_playlists(playlists):
@@ -27,16 +27,24 @@ def playlist_action(message, title, callback, *args, **kwargs):
 def add_to_playlist(playlist, *tracks):
  """Add track to playlist."""
  playlist.tracks += tracks
- application.api.add_songs_to_playlist(playlist.id, [x.id for x in tracks])
+ for pos, id in enumerate(application.api.add_songs_to_playlist(playlist.id, [x.id for x in tracks])):
+  session.add(PlaylistEntry(id = id, playlist = playlist, track = tracks[pos]))
+ session.commit()
  if application.frame.showing == playlist:
   application.frame.add_results(tracks, clear = False)
 
-def remove_from_playlist(playlist, track):
- """Remove track from playlist."""
- if application.frame.showing == playlist:
-  application.frame.remove_result(track)
- playlist.tracks.remove(track)
- #application.api.remove_entries_from_playlist(playlist.id, [x.id for x in tracks])
+def remove_from_playlist(*entries):
+ """Remove entry from playlist."""
+ try:
+  application.api.remove_entries_from_playlist([entry.id for entry in entries])
+ except NotLoggedIn:
+  return do_login(callback = remove_from_playlist, args = entries)
+ for entry in entries:
+  if application.frame.showing == entry.playlist:
+   application.frame.remove_result(entry.track)
+  session.delete(entry)
+  entry.playlist.tracks.remove(entry.track)
+ session.commit()
 
 def delete_station(station):
  """Delete a station both from Google and the local database."""
