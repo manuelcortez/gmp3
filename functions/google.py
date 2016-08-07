@@ -73,3 +73,16 @@ def delete_station(station):
    application.frame.delete_stations_menu.Delete(delete_id)
  except NotLoggedIn:
   do_login(callback = delete_station, args = [station])
+
+def load_artist_tracks(artist):
+ """Get all tracks for artist."""
+ tracks = [] # All the tracks.
+ try:
+  a = application.api.get_artist_info(artist.id)
+  artist.populate(a)
+  for album in a.get('albums', []):
+   album = application.api.get_album_info(album['albumId'])
+   tracks += album.get('tracks', [])
+  wx.CallAfter(application.frame.add_results, tracks, showing = artist.name)
+ except NotLoggedIn:
+  do_login(callback = load_artist_tracks, args = [artist])

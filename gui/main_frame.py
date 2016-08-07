@@ -11,7 +11,7 @@ from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login, format_track, load_playlist, load_station
-from functions.google import playlist_action, delete_station, add_to_playlist
+from functions.google import playlist_action, delete_station, add_to_playlist, load_artist_tracks
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
@@ -97,7 +97,7 @@ class MainFrame(wx.Frame):
   mb.Append(fm, '&File')
   pm = wx.Menu() # Play menu.
   self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
-  self.Bind(wx.EVT_MENU, lambda event: queue(self.results[self.view.GetSelection()]) if self.view.GetSelection() != -1 else wx.Bell(), pm.Append(wx.ID_ANY, '&Queue Item\tSHIFT+RETURN', 'Add the currently focused track to the play queue.'))
+  self.Bind(wx.EVT_MENU, lambda event: queue(self.self.get_result()) if self.get_result() is not None else wx.Bell(), pm.Append(wx.ID_ANY, '&Queue Item\tSHIFT+RETURN', 'Add the currently focused track to the play queue.'))
   self.Bind(wx.EVT_MENU, self.on_previous, pm.Append(wx.ID_ANY, '&Previous Track\tCTRL+LEFT', 'Play the previous track.'))
   self.Bind(wx.EVT_MENU, self.on_next, pm.Append(wx.ID_ANY, '&Next Track\tCTRL+RIGHT', 'Play the next track.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
@@ -120,9 +120,10 @@ class MainFrame(wx.Frame):
   sm.AppendSubMenu(self.stations_menu, '&Radio Stations', 'Locally stored and remote radio stations.')
   mb.Append(sm, '&Source')
   tm = wx.Menu()
+  self.Bind(wx.EVT_MENU, self.load_artist_tracks, tm.Append(wx.ID_ANY, '&Goto &Artist\tCTRL+$', 'View all tracks by the artist of the currently focused track.'))
   self.Bind(wx.EVT_MENU, self.load_album, tm.Append(wx.ID_ANY, 'Go To A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
-  self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, self.results[self.view.GetSelection()]) if self.view.GetSelection() != -1 else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
-  self.Bind(wx.EVT_MENU, lambda event: add_to_playlist(self.last_playlist, self.results[self.view.GetSelection()]) if self.last_playlist is not None and self.view.GetSelection() != -1 else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To Most Recent Playlist\tCTRL+RETURN', 'Add the currently selected track to the most recent playlist.'))
+  self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, self.get_result()) if self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
+  self.Bind(wx.EVT_MENU, lambda event: add_to_playlist(self.last_playlist, self.get_result()) if self.last_playlist is not None and self.self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To Most Recent Playlist\tCTRL+RETURN', 'Add the currently selected track to the most recent playlist.'))
   mb.Append(tm, '&Track')
   self.options_menu = wx.Menu()
   for section in sections:
@@ -440,3 +441,26 @@ class MainFrame(wx.Frame):
     except NotLoggedIn:
      do_login(callback = self.load_album)
    Thread(target = f, args = [self.results[cr]]).start()
+ 
+ def get_result(self):
+  """Return the currently focused result."""
+  if self.view.GetSelection() != -1:
+   return self.results[self.view.GetSelection()]
+ 
+ def load_artist_tracks(self, event):
+  """Load the tracks for the currently focused result."""
+  res = self.get_result()
+  if res is None:
+   wx.Bell()
+  else:
+   if len(res.artists) == 1:
+    artist = res.artists[0]
+   else:
+    dlg = wx.SingleChoiceDialog(self, 'Select an artist', 'Multiple Artists', choices = [a.name for a in res.artists])
+    if dlg.ShowModal() == wx.ID_OK:
+     artist = res.artists[dlg.GetSelection()]
+    else:
+     artist = None
+    dlg.Destroy()
+   if artist is not None:
+    Thread(target = load_artist_tracks, args = [artist]).start()
