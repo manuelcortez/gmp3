@@ -5,7 +5,7 @@ from wx.lib.filebrowsebutton import DirBrowseButton
 from configobj import ConfigObj
 from validate import Validator
 
-config_dir = application.paths.GetUserDataDir()
+config_dir = application.paths.GetUserLocalDataDir()
 
 def create_config_dir():
  """Create the configuration directory."""
