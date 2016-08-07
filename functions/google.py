@@ -85,3 +85,27 @@ def load_artist_tracks(artist):
    wx.CallAfter(application.frame.add_results, album.get('tracks', []), clear = False)
  except NotLoggedIn:
   do_login(callback = load_artist_tracks, args = [artist])
+
+def artist_action(artists, callback, *args, **kwargs):
+ """select an artist from artists and call callback(artist, *kwargs, **kwargs)."""
+ do_login()
+ def f1(artists):
+  """Populate artists."""
+  for a in artists:
+   wx.CallAfter(a.populate, application.api.get_artist_info(a.id))
+  wx.CallAfter(f2, artists)
+ def f2(artists):
+  """Make a dialog with the artist names."""
+  if len(artists) == 1:
+   artist = artists[0]
+  else:
+   dlg = wx.SingleChoiceDialog(application.frame, 'Select an artist', 'Multiple Artists', [x.name for x in artists])
+   if dlg.ShowModal() == wx.ID_OK:
+    artist = artists[dlg.GetSelection()]
+   else:
+    artist = None
+   dlg.Destroy()
+  if artist is not None:
+   Thread(target = callback, args = [artist, *args], kwargs = kwargs).start()
+ Thread(target = f1, args = [artists]).start()
+

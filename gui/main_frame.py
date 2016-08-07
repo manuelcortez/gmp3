@@ -11,7 +11,7 @@ from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login, format_track, load_playlist, load_station
-from functions.google import playlist_action, delete_station, add_to_playlist, load_artist_tracks
+from functions.google import playlist_action, artist_action, delete_station, add_to_playlist, load_artist_tracks
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
@@ -120,8 +120,9 @@ class MainFrame(wx.Frame):
   sm.AppendSubMenu(self.stations_menu, '&Radio Stations', 'Locally stored and remote radio stations.')
   mb.Append(sm, '&Source')
   tm = wx.Menu()
-  self.Bind(wx.EVT_MENU, self.load_artist_tracks, tm.Append(wx.ID_ANY, '&Goto &Artist\tCTRL+$', 'View all tracks by the artist of the currently focused track.'))
+  self.Bind(wx.EVT_MENU, self.load_artist_tracks, tm.Append(wx.ID_ANY, 'Goto &Artist\tCTRL+$', 'View all tracks by the artist of the currently focused track.'))
   self.Bind(wx.EVT_MENU, self.load_album, tm.Append(wx.ID_ANY, 'Go To A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
+  self.Bind(wx.EVT_MENU, self.load_top_tracks, tm.Append(wx.ID_ANY, '&Top Tracks\tCTRL+;', 'Load the top tracks for the artist of the currently selected track.'))
   self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, self.get_result()) if self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
   self.Bind(wx.EVT_MENU, lambda event: add_to_playlist(self.last_playlist, self.get_result()) if self.last_playlist is not None and self.self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To Most Recent Playlist\tCTRL+RETURN', 'Add the currently selected track to the most recent playlist.'))
   mb.Append(tm, '&Track')
@@ -168,7 +169,7 @@ class MainFrame(wx.Frame):
  def edit_playlist(self, event):
   """Delete a playlist from the local database."""
   playlists = list(self.playlists.keys())
-  dlg = wx.SingleChoiceDialog(self, 'Select a playlist to edit', 'Edit Playlist', choices = [x.name for x in playlists])
+  dlg = wx.SingleChoiceDialog(self, 'Select a playlist to edit', 'Edit Playlist', [x.name for x in playlists])
   if dlg.ShowModal() == wx.ID_OK:
    EditPlaylistFrame(playlists[dlg.GetSelection()]).Show(True)
   dlg.Destroy()
@@ -408,7 +409,7 @@ class MainFrame(wx.Frame):
    stations = []
    for d in data:
     stations.append(load_station(d))
-   dlg = wx.SingleChoiceDialog(self, 'Select a station to listen to', 'Radio Stations', choices = [x.name for x in stations])
+   dlg = wx.SingleChoiceDialog(self, 'Select a station to listen to', 'Radio Stations', [x.name for x in stations])
    if dlg.ShowModal() == wx.ID_OK:
     Thread(target = self.load_station, args = [stations[dlg.GetSelection()]]).start()
    dlg.Destroy()
@@ -453,14 +454,16 @@ class MainFrame(wx.Frame):
   if res is None:
    wx.Bell()
   else:
-   if len(res.artists) == 1:
-    artist = res.artists[0]
-   else:
-    dlg = wx.SingleChoiceDialog(self, 'Select an artist', 'Multiple Artists', choices = [a.name for a in res.artists])
-    if dlg.ShowModal() == wx.ID_OK:
-     artist = res.artists[dlg.GetSelection()]
-    else:
-     artist = None
-    dlg.Destroy()
-   if artist is not None:
-    Thread(target = load_artist_tracks, args = [artist]).start()
+   artist_action(res.artists, load_artist_tracks)
+ 
+ def load_top_tracks(self, event):
+  """Load the top tracks for the artist of the currently selected track."""
+  def f(artist):
+   """Load the top tracks for an artist."""
+   a = application.api.get_artist_info(artist.id)
+   wx.CallAfter(self.add_results, a.get('topTracks', []), showing = '%s top tracks' % artist.name)
+  res = self.get_result()
+  if res is None:
+   wx.Bell()
+  else:
+   artist_action(res.artists, f)

@@ -22,6 +22,7 @@ class TrackMenu(wx.Menu):
   unqueue_item.Enable(track in application.frame.queue)
   self.Bind(wx.EVT_MENU, application.frame.load_artist_tracks, self.Append(wx.ID_ANY, 'Show A&rtist', 'Load all artist tracks.'))
   self.Bind(wx.EVT_MENU, application.frame.load_album, self.Append(wx.ID_ANY, 'Show A&lbum', 'Load the whole album.'))
+  self.Bind(wx.EVT_MENU, application.frame.load_top_tracks, self.Append(wx.ID_ANY, 'Show Artist &Top Tracks', 'Load an artist\'s top tracks.'))
   self.Bind(wx.EVT_MENU, self.add_to_library, self.Append(wx.ID_ANY, 'Add To &Library', 'Add the track to the library.'))
   self.Bind(wx.EVT_MENU, self.remove_from_library, self.Append(wx.ID_ANY, '&Remove From Library', 'Remove the track from the library.'))
   playlists_menu = wx.Menu()
