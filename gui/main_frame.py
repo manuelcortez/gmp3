@@ -12,7 +12,7 @@ from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login, format_track, load_station
 from functions.google import playlist_action, delete_station
-from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
+from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
 from .edit_playlist_frame import EditPlaylistFrame
@@ -95,6 +95,7 @@ class MainFrame(wx.Frame):
   mb.Append(fm, '&File')
   pm = wx.Menu() # Play menu.
   self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
+  self.Bind(wx.EVT_MENU, lambda event: queue(self.results[self.view.GetSelection()]) if self.view.GetSelection() != -1 else wx.Bell(), pm.Append(wx.ID_ANY, '&Queue Item\tSHIFT+RETURN', 'Add the currently focused track to the play queue.'))
   self.Bind(wx.EVT_MENU, self.on_previous, pm.Append(wx.ID_ANY, '&Previous Track\tCTRL+LEFT', 'Play the previous track.'))
   self.Bind(wx.EVT_MENU, self.on_next, pm.Append(wx.ID_ANY, '&Next Track\tCTRL+RIGHT', 'Play the next track.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
