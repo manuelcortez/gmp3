@@ -124,7 +124,9 @@ class MainFrame(wx.Frame):
   self.SetMenuBar(mb)
   self.Bind(wx.EVT_SHOW, self.on_show)
   self.playlists = {} # A list of playlist: id key: value pairs.
-  for p in session.query(Playlist).all():
+  playlists = session.query(Playlist).order_by(Playlist.name).all()
+  playlists.reverse()
+  for p in playlists:
    self.add_playlist(p)
   self.stations = {} # The same as .playlists except for radio stations.
   for s in session.query(Station).all():
@@ -281,10 +283,11 @@ class MainFrame(wx.Frame):
  
  def on_close(self, event):
   """Close the window."""
-  application.running = False
   self.position_timer.Stop()
   if application.stream:
    application.stream.stop()
+  if application.old_stream:
+   application.old_stream.stop()
   system_config['offline_search'] = self.offline_search.IsChecked()
   system_config['volume'] = self.volume.GetValue()
   session.commit()

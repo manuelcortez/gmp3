@@ -28,6 +28,16 @@ def add_to_playlist(playlist, *tracks):
  """Add track to playlist."""
  playlist.tracks += tracks
  application.api.add_songs_to_playlist(playlist.id, [x.id for x in tracks])
+ if application.frame.showing == playlist:
+  application.frame.add_results(tracks, clear = False)
+
+def remove_from_playlist(playlist, track):
+ """Remove track from playlist."""
+ for t in tracks:
+  if application.frame.showing == playlist:
+   application.frame.remove_result(t)
+  playlist.tracks.remove(t)
+ #application.api.remove_entries_from_playlist(playlist.id, [x.id for x in tracks])
 
 def delete_station(station):
  """Delete a station both from Google and the local database."""

@@ -140,6 +140,15 @@ class Playlist(Base):
  description = Column(String(length = 10000), nullable = False)
  tracks = relationship('Track', secondary = playlist_tracks)
 
+class PlaylistEntry(Base):
+ __tablename__ = 'playlist_entries'
+ key = Column(Integer(), primary_key = True)
+ id = Column(String(length = 30), nullable = False)
+ playlist_id = Column(Integer(), ForeignKey('playlists.key'))
+ playlist = relationship('Playlist', backref = 'entries')
+ track_id = Column(Integer(), ForeignKey('tracks.key'))
+ track = relationship('Track', backref = 'playlist_entries')
+
 class Station(Base):
  __tablename__ = 'stations'
  key = Column(Integer(), primary_key = True)

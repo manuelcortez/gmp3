@@ -18,5 +18,4 @@ api.android_id = '123456789abcde'
 
 track = None # The current track.
 stream = None # The stream of the currently playing track.
-
-running = True # Set to False when the program closes.
+old_stream = None # The stream which is just finishing.
