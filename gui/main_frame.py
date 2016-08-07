@@ -118,6 +118,9 @@ class MainFrame(wx.Frame):
   self.stations_menu.AppendSubMenu(self.delete_stations_menu, '&Delete')
   sm.AppendSubMenu(self.stations_menu, '&Radio Stations', 'Locally stored and remote radio stations.')
   mb.Append(sm, '&Source')
+  tm = wx.Menu()
+  self.Bind(wx.EVT_MENU, self.load_album, sm.Append(wx.ID_ANY, 'A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
+  self.Bind(wx.EVT_MENU, self.add_to_playlist, tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
   self.options_menu = wx.Menu()
   for section in sections:
    self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s...' % section.title, 'Edit the %s configuration.' % section.title))
@@ -231,7 +234,10 @@ class MainFrame(wx.Frame):
    text = 'Artist: %s' % self.showing
   else:
    text = 'Unknown [%s]' % self.showing
-  self.status.SetStatusText('%s (%s %s)' % (text, len(self.results), 'song' if len(self.results) == 1 else 'songs'))
+  loaded = len(self.results)
+  total = len(self.results) + len(self.autoload)
+  percentage = '%.2f' % (100 / total * loaded)
+  self.status.SetStatusText(interface_config['status_format'].format(text, loaded, total, percentage))
  
  def load_library(self):
   """Load all the songs from the Google Music library."""
@@ -417,4 +423,17 @@ class MainFrame(wx.Frame):
   self.autoload = []
   shuffle(self.results)
   self.add_results(self.results)
-  
+   
+ def load_album(self, event):
+  cr = self.view.GetSelection()
+  if cr == -1:
+   wx.Bell()
+  else:
+   def f(track):
+    """Load the album and show it."""
+    try:
+     album = application.api.get_album_info(track.album_id)
+     wx.CallAfter(application.frame.add_results, album.get('tracks', []), showing = '%s - %s' % (track.artist, album.get('name', 'Unknown Album %s' % track.year)))
+    except NotLoggedIn:
+     do_login(callback = self.load_album)
+   Thread(target = f, args = [self.results[cr]]).start()

@@ -56,10 +56,13 @@ interface_config.title = 'Interface'
 spec = ConfigObj()
 spec['clear_queue'] = 'boolean(default = True)'
 spec['track_format'] = 'string(default = "{artist} - {album} - {number} - {title} ({duration})")'
+spec['status_format'] = 'string(default = "{} ({} / {} loaded [{}%])")'
 spec['results'] = 'integer(min = 1, max = 100, default = 25)'
 interface_config.configspec = spec
 interface_config.names = {
  'clear_queue': 'Clear The &Queue When Enter Is Pressed',
+ 'track_format': '&Track Format',
+ 'status_format': '&Status Bar Format',
  'results': '&Results To Download'
 }
 
