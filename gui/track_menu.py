@@ -27,7 +27,7 @@ class TrackMenu(wx.Menu):
   if playlists:
    for p in playlists:
     self.Bind(wx.EVT_MENU, lambda event, playlist = p: add_to_playlist(playlist, self.track), playlists_menu.Append(wx.ID_ANY, '&%s' % p.name, p.description))
-  self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to add this track to', 'Select a playlist', add_to_playlist, self.track]).start(), playlists_menu.Append(wx.ID_ANY, '&Remote', 'Add this track to a remote playlist.'))
+  self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to add this track to', 'Select a playlist', add_to_playlist, self.track]).start(), playlists_menu.Append(wx.ID_ANY, '&Remote...', 'Add this track to a remote playlist.'))
   self.AppendSubMenu(playlists_menu, '&Add To Playlist', 'Add this track to one of your playlists.')
   playlist_entries_menu = wx.Menu()
   entry_item = self.AppendSubMenu(playlist_entries_menu, '&Remove from playlist', 'Remove this track from one of your playlists.')

@@ -10,7 +10,7 @@ from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
-from functions.util import do_login, format_track, load_station
+from functions.util import do_login, format_track, load_playlist, load_station
 from functions.google import playlist_action, delete_station
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
 from .audio_options import AudioOptions
@@ -26,6 +26,7 @@ class MainFrame(wx.Frame):
  """The main frame."""
  def __init__(self, *args, **kwargs):
   super(MainFrame, self).__init__(*args, **kwargs)
+  self.playlist_action = None # An action to be called when all playlists have been localised.
   self.autoload = [] # Tracks to autoload in order.
   self.showing = None # Set it to the currently showing playlist or one of the showing.* constants from functions.sound.
   self.queue = [] # The play queue.
@@ -108,7 +109,7 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(self.queue, showing = showing.SHOWING_QUEUE), sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all(), showing = showing.SHOWING_CATALOGUE), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
   self.playlists_menu = wx.Menu()
-  self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to load', 'Playlists', lambda playlist: wx.CallAfter(self.add_results, playlist.tracks, showing = playlist)]).start(), self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
+  self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to load', 'Playlists', lambda playlist: self.add_results(playlist.tracks, showing = playlist)) if self.playlist_action is None else wx.Bell(), self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
   self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
   sm.AppendSubMenu(self.playlists_menu, '&Playlists', 'Select ocal or a remote playlist to view.')
   self.stations_menu = wx.Menu()
@@ -314,6 +315,14 @@ class MainFrame(wx.Frame):
  
  def play_manager(self, event):
   """Manage the currently playing track."""
+  try:
+   load_playlist(self.playlist_action.playlists.pop(0))
+  except AttributeError: # There is either no playlist action, or there are no playlists to load yet.
+   pass
+  except IndexError: # There are no more playlists. Let's rock!
+   a = self.playlist_action
+   self.playlist_action = None
+   a.complete()
   if self.autoload:
    t = self.autoload.pop(0)
    if isinstance(t, dict):
