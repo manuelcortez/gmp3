@@ -2,6 +2,7 @@
 
 import application
 from threading import Thread
+from datetime import datetime
 from .util import do_login
 from .network import download_track
 from config import storage_config, system_config
@@ -24,6 +25,7 @@ def play(track):
  else:
   stream = FileStream(file = track.path)
  application.track = track
+ track.last_played = datetime.now()
  if application.stream is not None:
   application.stream.stop()
  stream.play(True)

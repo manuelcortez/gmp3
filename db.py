@@ -5,7 +5,7 @@ from config import db_config, storage_config, interface_config
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 engine = create_engine(db_config['url'], echo = db_config['echo'])
 Base = declarative_base(bind = engine)
@@ -60,7 +60,7 @@ class Track(Base):
  filename = Column(String(length = 500), nullable = True, default = None)
  genre = Column(String(length = 100), nullable = False)
  id = Column(String(length = 30), nullable = True)
- last_played = Column(DateTime(), nullable = False)
+ last_played = Column(DateTime(), nullable = True, default = None)
  lyrics = Column(String(length = 100000), nullable = True)
  play_count = Column(Integer(), nullable = False)
  playlists = relationship('Playlist', secondary = playlist_tracks)
@@ -105,7 +105,6 @@ class Track(Base):
   self.duration = timedelta(seconds = int(d.get('durationMillis', '0')) / 1000)
   self.genre = d.get('genre', 'No Genre')
   self.id = d.get('id', get_id(d))
-  self.last_played = datetime.now()
   self.play_count = d.get('playCount', 0)
   self.store_id = d.get('storeId', self.id)
   self.title = d.get('title', 'Untitled Track')
