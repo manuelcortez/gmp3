@@ -76,13 +76,12 @@ def delete_station(station):
 
 def load_artist_tracks(artist):
  """Get all tracks for artist."""
- tracks = [] # All the tracks.
  try:
   a = application.api.get_artist_info(artist.id)
   artist.populate(a)
+  wx.CallAfter(application.frame.add_results, [], showing = artist.name)
   for album in a.get('albums', []):
    album = application.api.get_album_info(album['albumId'])
-   tracks += album.get('tracks', [])
-  wx.CallAfter(application.frame.add_results, tracks, showing = artist.name)
+   wx.CallAfter(application.frame.add_results, album.get('tracks', []), clear = False)
  except NotLoggedIn:
   do_login(callback = load_artist_tracks, args = [artist])
