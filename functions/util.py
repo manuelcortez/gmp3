@@ -1,7 +1,7 @@
 """Utility functions."""
 
 import application, wx
-from db import session, Playlist, Station, list_to_objects
+from db import session, Playlist, Station, PlaylistEntry, to_object
 from config import interface_config
 from gui.login_frame import LoginFrame
 from gmusicapi.exceptions import AlreadyLoggedIn
@@ -29,8 +29,16 @@ def load_playlist(playlist):
  p.name = playlist.get('name', 'Untitled Playlist')
  p.description = playlist.get('description', '')
  p.tracks = []
- for t in list_to_objects([x['track'] for x in playlist.get('tracks', []) if 'track' in x]):
-  p.tracks.append(t)
+ for t in playlist.get('tracks', []):
+  if 'track' in t:
+   track = to_object(t['track'])
+   p.tracks.append(track)
+   i = t['id']
+   try:
+    e = session.query(PlaylistEntry).filter(PlaylistEntry.id == i, PlaylistEntry.track == track, PlaylistEntry.playlist == p).one()
+   except NoResultFound:
+    e = PlaylistEntry(playlist = p, track = track, id = t['id'])
+   session.add(e)
  session.commit()
  application.frame.add_playlist(p)
  return p

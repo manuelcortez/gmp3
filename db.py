@@ -117,7 +117,7 @@ class Track(Base):
 def to_object(item):
  """Return item as a Track object."""
  try:
-  track = session.query(Track).filter(Track.id == get_id(item)).one()
+  track = session.query(Track).filter(Track.id == item.get('id', get_id(item))).one()
  except exc.NoResultFound:
   track = Track()
   track.populate(item)

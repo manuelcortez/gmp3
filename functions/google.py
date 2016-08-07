@@ -33,10 +33,9 @@ def add_to_playlist(playlist, *tracks):
 
 def remove_from_playlist(playlist, track):
  """Remove track from playlist."""
- for t in tracks:
-  if application.frame.showing == playlist:
-   application.frame.remove_result(t)
-  playlist.tracks.remove(t)
+ if application.frame.showing == playlist:
+  application.frame.remove_result(track)
+ playlist.tracks.remove(track)
  #application.api.remove_entries_from_playlist(playlist.id, [x.id for x in tracks])
 
 def delete_station(station):
