@@ -39,6 +39,7 @@ def playlist_action(message, title, callback, *args, **kwargs):
 
 def add_to_playlist(playlist, *tracks):
  """Add track to playlist."""
+ application.frame.last_playlist = playlist
  playlist.tracks += tracks
  for pos, id in enumerate(application.api.add_songs_to_playlist(playlist.id, [x.id for x in tracks])):
   session.add(PlaylistEntry(id = id, playlist = playlist, track = tracks[pos]))

@@ -11,7 +11,7 @@ from sqlalchemy import func, or_
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login, format_track, load_playlist, load_station
-from functions.google import playlist_action, delete_station
+from functions.google import playlist_action, delete_station, add_to_playlist
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
@@ -26,6 +26,7 @@ class MainFrame(wx.Frame):
  """The main frame."""
  def __init__(self, *args, **kwargs):
   super(MainFrame, self).__init__(*args, **kwargs)
+  self.last_playlist = None # The playlist that most recently had a track added to it.
   self.playlist_action = None # An action to be called when all playlists have been localised.
   self.autoload = [] # Tracks to autoload in order.
   self.showing = None # Set it to the currently showing playlist or one of the showing.* constants from functions.sound.
@@ -119,8 +120,10 @@ class MainFrame(wx.Frame):
   sm.AppendSubMenu(self.stations_menu, '&Radio Stations', 'Locally stored and remote radio stations.')
   mb.Append(sm, '&Source')
   tm = wx.Menu()
-  self.Bind(wx.EVT_MENU, self.load_album, sm.Append(wx.ID_ANY, 'A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
-  self.Bind(wx.EVT_MENU, self.add_to_playlist, tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
+  self.Bind(wx.EVT_MENU, self.load_album, tm.Append(wx.ID_ANY, 'Go To A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
+  self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, self.results[self.view.GetSelection()]) if self.view.GetSelection() != -1 else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
+  self.Bind(wx.EVT_MENU, lambda event: add_to_playlist(self.last_playlist, self.results[self.view.GetSelection()]) if self.last_playlist is not None and self.view.GetSelection() != -1 else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To Most Recent Playlist\tCTRL+RETURN', 'Add the currently selected track to the most recent playlist.'))
+  mb.Append(tm, '&Track')
   self.options_menu = wx.Menu()
   for section in sections:
    self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s...' % section.title, 'Edit the %s configuration.' % section.title))
