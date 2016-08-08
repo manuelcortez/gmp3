@@ -76,7 +76,7 @@ class TrackMenu(wx.Menu):
   
  def add_rating(self, rating):
   """Rate the current track."""
-  if self.track.in_library:
+  if not self.track.in_library:
    do_error('To rate this track first add it to your library.')
   else:
    application.api.change_song_metadata({'id': self.track.id, 'rating': str(rating)})
