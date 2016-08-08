@@ -1,13 +1,13 @@
 """Database specifics."""
 
-import os.path
+import os.path, application
 from config import db_config, storage_config, interface_config
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
 from datetime import timedelta
 
-engine = create_engine(db_config['url'], echo = db_config['echo'])
+engine = create_engine('%s.%s' % (db_config['url'], application.__version__), echo = db_config['echo'])
 Base = declarative_base(bind = engine)
 Session = sessionmaker(bind = engine)
 session = Session()
