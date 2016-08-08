@@ -2,7 +2,7 @@
 
 import wx, application
 from functions.google import playlist_action, add_to_playlist, remove_from_playlist
-from functions.util import do_login, format_track
+from functions.util import do_login, format_track, do_error
 from functions.sound import play, queue, unqueue
 from functions.network import download_track
 from db import session, Playlist
@@ -78,17 +78,25 @@ class TrackMenu(wx.Menu):
   
  def add_rating(self, rating):
   """Rate the current track."""
-  wx.MessageBox('Due to an error in the API ratings do not currently work.', 'Watch This Space', style = wx.ICON_EXCLAMATION)
+  if self.track.id.startswith('T'):
+   do_error('To rate this track first add it to your library.')
+  else:
+   application.api.change_song_metadata({'id': self.track.id, 'rating': str(rating)})
  
  def add_to_library(self, event):
   """Add the current song to the library."""
-  do_login(callback = application.api.add_store_track, args = [self.track.store_id])
-  if application.frame.showing == SHOWING_LIBRARY:
-   try:
-    application.frame.remove_result(self.track)
-   except ValueError:
-    pass # It's not in the list after all.
-   application.frame.add_results([self.track], clear = False)
+  try:
+   self.track.id = application.api.add_store_track(self.track.store_id)
+   session.add(self.track)
+   session.commit()
+   if application.frame.showing == SHOWING_LIBRARY:
+    try:
+     application.frame.remove_result(self.track)
+    except ValueError:
+     pass # It's not in the list after all.
+    application.frame.add_results([self.track], clear = False)
+  except NotLoggedIn:
+   do_login(callback = self.add_to_library, args = [event])
  
  def remove_from_library(self, event):
   """Remove this track from the library."""
