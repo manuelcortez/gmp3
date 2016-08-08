@@ -86,6 +86,11 @@ def load_artist_tracks(artist):
  except NotLoggedIn:
   do_login(callback = load_artist_tracks, args = [artist])
 
+def load_artist_top_tracks(artist):
+ """Load the top tracks for artist."""
+ a = application.api.get_artist_info(artist.id)
+ wx.CallAfter(application.frame.add_results, a.get('topTracks', []), showing = '%s top tracks' % artist.name)
+
 def artist_action(artists, callback, *args, **kwargs):
  """select an artist from artists and call callback(artist, *kwargs, **kwargs)."""
  do_login()

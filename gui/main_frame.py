@@ -8,10 +8,11 @@ from wxgoodies.keys import add_accelerator
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
 from config import save, system_config, interface_config, sections
 from sqlalchemy import func, or_
+from sqlalchemy.orm.exc import NoResultFound
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from functions.util import do_login, format_track, load_playlist, load_station
-from functions.google import playlist_action, artist_action, delete_station, add_to_playlist, load_artist_tracks
+from functions.google import playlist_action, artist_action, delete_station, add_to_playlist, load_artist_tracks, load_artist_top_tracks
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
@@ -121,6 +122,8 @@ class MainFrame(wx.Frame):
   mb.Append(sm, '&Source')
   tm = wx.Menu()
   self.Bind(wx.EVT_MENU, self.load_artist_tracks, tm.Append(wx.ID_ANY, 'Goto &Artist\tCTRL+$', 'View all tracks by the artist of the currently focused track.'))
+  self.Bind(wx.EVT_MENU, self.load_top_tracks, tm.Append(wx.ID_ANY, '&Load Artist &Top Tracks', 'Load the top tracks for the artist of the currently selected result.'))
+  self.Bind(wx.EVT_MENU, self.load_related_artist, tm.Append(wx.ID_ANY, 'Go To &Related Artist...\tCTRL+7', 'Select an artist related to the artist of the currently selected result.'))
   self.Bind(wx.EVT_MENU, self.load_album, tm.Append(wx.ID_ANY, 'Go To A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
   self.Bind(wx.EVT_MENU, self.load_top_tracks, tm.Append(wx.ID_ANY, '&Top Tracks\tCTRL+;', 'Load the top tracks for the artist of the currently selected track.'))
   self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, self.get_result()) if self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
@@ -458,12 +461,43 @@ class MainFrame(wx.Frame):
  
  def load_top_tracks(self, event):
   """Load the top tracks for the artist of the currently selected track."""
-  def f(artist):
-   """Load the top tracks for an artist."""
-   a = application.api.get_artist_info(artist.id)
-   wx.CallAfter(self.add_results, a.get('topTracks', []), showing = '%s top tracks' % artist.name)
   res = self.get_result()
   if res is None:
    wx.Bell()
   else:
-   artist_action(res.artists, f)
+   artist_action(res.artists, load_artist_top_tracks)
+ 
+ def load_related_artist(self, event):
+  """Load the tracks of a related artist."""
+  def f1(artist):
+   """Load the related artists and build the dialog."""
+   try:
+    a = application.api.get_artist_info(artist.id)
+    wx.CallAfter(f2, a.get('related_artists', []))
+   except NotLoggedIn:
+    wx.CallAfter(do_login, callback = f1, args = [artist])
+  def f2(artists):
+   """Run through artists and add them to the database before building the dialog."""
+   results = [] # The list of Artist objects.
+   for a in artists:
+    try:
+     artist = session.query(Artist).filter(Artist.id == a['artistId']).one()
+    except NoResultFound:
+     artist = Artist(id = a['artistId'])
+    artist.populate(a)
+    session.add(artist)
+    results.append(artist)
+   session.commit()
+   dlg = wx.SingleChoiceDialog(self, 'Select a related artist', 'Related Artists', [x.name for x in results])
+   if dlg.ShowModal() == wx.ID_OK:
+    res = results[dlg.GetSelection()]
+   else:
+    res = None
+   dlg.Destroy()
+   if res is not None:
+    artist_action([res], load_artist_top_tracks)
+  res = self.get_result()
+  if res is None:
+   wx.Bell()
+  else:
+   artist_action(res.artists, f1)
