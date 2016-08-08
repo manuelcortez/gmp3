@@ -3,6 +3,7 @@
 import application, wx
 from .util import do_login, do_error
 from db import session, Playlist, PlaylistEntry
+from showing import SHOWING_LIBRARY
 from gmusicapi.exceptions import NotLoggedIn
 from threading import Thread
 
@@ -113,4 +114,31 @@ def artist_action(artists, callback, *args, **kwargs):
   if artist is not None:
    Thread(target = callback, args = [artist, *args], kwargs = kwargs).start()
  Thread(target = f1, args = [artists]).start()
+
+def add_to_library(track):
+ """Add track to the library."""
+ try:
+  track.id = application.api.add_store_track(track.store_id)
+  session.add(track)
+  session.commit()
+  if application.frame.showing == SHOWING_LIBRARY:
+   try:
+    application.frame.remove_result(track)
+   except ValueError:
+    pass # It's not in the list after all.
+   application.frame.add_results([track], clear = False)
+ except NotLoggedIn:
+  do_login(callback = add_to_library, args = [track])
+
+def remove_from_library(track):
+ """Remove track from the library."""
+ try:
+  application.api.delete_songs(track.id)
+  track.id = track.store_id
+  session.add(track)
+  session.commit()
+  if application.frame.showing == SHOWING_LIBRARY:
+   application.frame.remove_result(track)
+ except NotLoggedIn:
+  do_login(callback = remove_from_library, args = [track])
 

@@ -1,12 +1,11 @@
 """The track menu."""
 
 import wx, application
-from functions.google import playlist_action, add_to_playlist, remove_from_playlist
+from functions.google import playlist_action, add_to_playlist, remove_from_playlist, add_to_library, remove_from_library
 from functions.util import do_login, format_track, do_error
 from functions.sound import play, queue, unqueue
 from functions.network import download_track
 from db import session, Playlist
-from showing import SHOWING_LIBRARY
 from gmusicapi.exceptions import NotLoggedIn
 from threading import Thread
 
@@ -24,8 +23,7 @@ class TrackMenu(wx.Menu):
   self.Bind(wx.EVT_MENU, application.frame.load_related_artist, self.Append(wx.ID_ANY, '&Related Artists...', 'Load a related artist.'))
   self.Bind(wx.EVT_MENU, application.frame.load_album, self.Append(wx.ID_ANY, 'Show A&lbum', 'Load the whole album.'))
   self.Bind(wx.EVT_MENU, application.frame.load_top_tracks, self.Append(wx.ID_ANY, 'Show Artist &Top Tracks', 'Load an artist\'s top tracks.'))
-  self.Bind(wx.EVT_MENU, self.add_to_library, self.Append(wx.ID_ANY, 'Add To &Library', 'Add the track to the library.'))
-  self.Bind(wx.EVT_MENU, self.remove_from_library, self.Append(wx.ID_ANY, '&Remove From Library', 'Remove the track from the library.'))
+  self.Bind(wx.EVT_MENU, self.toggle_library, self.Append(wx.ID_ANY, '%s &Library' % ('Remove From' if track.in_library else 'Add to'), 'Add the track to the library.'))
   playlists_menu = wx.Menu()
   playlists = session.query(Playlist).all()
   if playlists:
@@ -78,31 +76,10 @@ class TrackMenu(wx.Menu):
   
  def add_rating(self, rating):
   """Rate the current track."""
-  if self.track.id.startswith('T'):
+  if self.track.in_library:
    do_error('To rate this track first add it to your library.')
   else:
    application.api.change_song_metadata({'id': self.track.id, 'rating': str(rating)})
- 
- def add_to_library(self, event):
-  """Add the current song to the library."""
-  try:
-   self.track.id = application.api.add_store_track(self.track.store_id)
-   session.add(self.track)
-   session.commit()
-   if application.frame.showing == SHOWING_LIBRARY:
-    try:
-     application.frame.remove_result(self.track)
-    except ValueError:
-     pass # It's not in the list after all.
-    application.frame.add_results([self.track], clear = False)
-  except NotLoggedIn:
-   do_login(callback = self.add_to_library, args = [event])
- 
- def remove_from_library(self, event):
-  """Remove this track from the library."""
-  do_login(callback = application.api.delete_songs, args = [self.track.id])
-  if application.frame.showing == SHOWING_LIBRARY:
-   application.frame.remove_result(self.track)
  
  def reload(self, event):
   """Reload the track from google."""
@@ -110,3 +87,10 @@ class TrackMenu(wx.Menu):
    self.track.populate(application.api.get_track_info(self.track.id))
   except NotLoggedIn:
    do_login(callback = self.reload, args = [event])
+ 
+ def toggle_library(self, event):
+  """If self.track is in the library, remove it, otherwise add it."""
+  if self.track.in_library:
+   remove_from_library(self.track)
+  else:
+   add_to_library(self.track)

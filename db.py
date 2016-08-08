@@ -14,7 +14,7 @@ session = Session()
 
 def get_id(d):
  """Get the id from a dictionary d."""
- return d.get('storeId', d.get('id', d.get('trackId', d.get('nid'))))
+ return d.get('storeId', d.get('nid', d.get('trackId', d.get('id'))))
 
 artist_tracks = Table('artist_tracks',
  Base.metadata,
@@ -70,6 +70,11 @@ class Track(Base):
  year = Column(Integer(), nullable = False)
  
  @property
+ def in_library(self):
+  """Return True if this track is in the google library."""
+  return not self.id.startswith('T')
+ 
+ @property
  def path(self):
   """Return an appropriate path for this result."""
   return os.path.join(storage_config['media_dir'], self.id + '.mp3')
@@ -104,7 +109,9 @@ class Track(Base):
   self.disc_number = d.get('discNumber', 1)
   self.duration = timedelta(seconds = int(d.get('durationMillis', '0')) / 1000)
   self.genre = d.get('genre', 'No Genre')
-  self.id = d.get('id', get_id(d))
+  self.id = d.get('id', self.id)
+  if self.id is None:
+   self.id = get_id(d)
   self.play_count = d.get('playCount', 0)
   self.store_id = d.get('storeId', self.id)
   self.title = d.get('title', 'Untitled Track')
@@ -117,7 +124,7 @@ class Track(Base):
 def to_object(item):
  """Return item as a Track object."""
  try:
-  track = session.query(Track).filter(Track.id == item.get('id', get_id(item))).one()
+  track = session.query(Track).filter(Track.store_id == get_id(item)).one()
  except exc.NoResultFound:
   track = Track()
   track.populate(item)
