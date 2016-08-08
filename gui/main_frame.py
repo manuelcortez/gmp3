@@ -11,6 +11,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
+from accessibility import output
 from functions.util import do_login, format_track, load_playlist, load_station
 from functions.google import playlist_action, artist_action, delete_station, add_to_playlist, load_artist_tracks, load_artist_top_tracks
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
@@ -98,11 +99,19 @@ class MainFrame(wx.Frame):
   mb.Append(fm, '&File')
   pm = wx.Menu() # Play menu.
   self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
+  self.Bind(wx.EVT_MENU, self.do_stop, pm.Append(wx.ID_ANY, '&Stop\tCTRL+.', 'Stop the currently playlist track.'))
   self.Bind(wx.EVT_MENU, lambda event: queue(self.self.get_result()) if self.get_result() is not None else wx.Bell(), pm.Append(wx.ID_ANY, '&Queue Item\tSHIFT+RETURN', 'Add the currently focused track to the play queue.'))
   self.Bind(wx.EVT_MENU, self.on_previous, pm.Append(wx.ID_ANY, '&Previous Track\tCTRL+LEFT', 'Play the previous track.'))
   self.Bind(wx.EVT_MENU, self.on_next, pm.Append(wx.ID_ANY, '&Next Track\tCTRL+RIGHT', 'Play the next track.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
   self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
+  repeat_menu = wx.Menu()
+  self.repeat_off = repeat_menu.AppendRadioItem(wx.ID_ANY, '&Off', 'No repeat.')
+  self.repeat_track = repeat_menu.AppendRadioItem(wx.ID_ANY, '&Track', 'Repeat just the currently playlist track.')
+  self.repeat_all = repeat_menu.AppendRadioItem(wx.ID_ANY, '&All', 'Repeat all.')
+  [self.repeat_off, self.repeat_track, self.repeat_all][int(system_config['repeat'])].Check(True)
+  pm.AppendSubMenu(repeat_menu, '&Repeat', 'Repeat options')
+  add_accelerator(self, 'CTRL+R', self.cycle_repeat)
   self.Bind(wx.EVT_MENU, self.on_shuffle, pm.Append(wx.ID_ANY, '&Shuffle\tCTRL+H', 'Shuffle the current view.'))
   mb.Append(pm, '&Play')
   sm = wx.Menu()
@@ -181,11 +190,20 @@ class MainFrame(wx.Frame):
   """Show the window."""
   set_volume(system_config['volume'])
  
- def SetTitle(self, title = None):
+ def SetTitle(self):
   """Set the title to something."""
-  if title is None:
+  if application.stream is None:
    title = 'Not Playing'
-  super(MainFrame, self).SetTitle('%s - %s' % (application.name, title))
+   mode = None
+  else:
+   title = str(application.track)
+   if application.stream.is_stopped:
+    mode = 'Stopped'
+   elif application.stream.is_paused:
+    mode = 'Paused'
+   else:
+    mode = 'Playing'
+  super(MainFrame, self).SetTitle('%s - %s%s' % (application.name, title, ' [{}]'.format(mode) if mode is not None else ''))
  
  def load_result(self, result):
   """Load a result from a dictionary."""
@@ -306,6 +324,12 @@ class MainFrame(wx.Frame):
    application.old_stream.stop()
   system_config['offline_search'] = self.offline_search.IsChecked()
   system_config['volume'] = self.volume.GetValue()
+  if self.repeat_track.IsChecked():
+   system_config['repeat'] = '1'
+  elif self.repeat_all.IsChecked():
+   system_config['repeat'] = '2'
+  else:
+   system_config['repeat'] = '0'
   session.commit()
   save()
   event.Skip()
@@ -350,7 +374,11 @@ class MainFrame(wx.Frame):
    if not self.position.HasFocus():
     self.position.SetValue(int(pos * (100 / length)))
    if pos == length:
-    play(get_next(remove = True))
+    n = get_next(remove = True)
+    if n is None:
+     self.SetTitle()
+    else:
+     play(n)
   else:
    self.position.SetValue(0)
  
@@ -363,6 +391,7 @@ class MainFrame(wx.Frame):
    else:
     application.stream.pause()
     self.play.SetLabel(PLAY_LABEL)
+   self.SetTitle()
   else:
    wx.Bell()
  
@@ -501,3 +530,26 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    artist_action(res.artists, f1)
+ 
+ def cycle_repeat(self, event):
+  """Cycle through repeat modes."""
+  if self.repeat_off.IsChecked():
+   self.repeat_track.Check(True)
+   mode = 'track'
+  elif self.repeat_track.IsChecked():
+   self.repeat_all.Check(True)
+   mode = 'all'
+  else:
+   self.repeat_off.Check(True)
+   mode = 'off'
+   
+  output.speak('Repeat %s.' % mode)
+ 
+ def do_stop(self, event):
+  """Stop the currently playing track."""
+  if application.stream:
+   application.stream.stop()
+   self.SetTitle()
+   application.stream.set_position(0)
+  else:
+   wx.Bell()

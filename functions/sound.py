@@ -14,6 +14,8 @@ seek_amount = 100000
 
 def play(track):
  """Play a track."""
+ if track is None:
+  return # There's no track left to play.
  if not track.downloaded:
   try:
    url = application.api.get_stream_url(track.id)
@@ -32,11 +34,14 @@ def play(track):
  application.stream = stream
  set_pan(system_config['pan'])
  set_frequency(system_config['frequency'])
- application.frame.SetTitle(str(track))
+ application.frame.SetTitle()
  application.frame.update_labels()
 
 def get_next(remove = True):
  """Get the next track which should be played. If remove == True, delete the track from the queue if that's where it came from."""
+ if application.frame.repeat_track.IsChecked():
+  return application.track
+ t = None
  if application.frame.queue:
   t = application.frame.queue[0]
   if remove:
@@ -44,17 +49,22 @@ def get_next(remove = True):
  else:
   try:
    t = application.frame.results[application.frame.results.index(application.track) + 1]
-  except IndexError:
-   return None
-  except ValueError:
+  except IndexError: # We're at the end.
+   if application.frame.results and application.frame.repeat_all.IsChecked():
+    t = application.frame.results[0]
+   else:
+    pass # t is already None.
+  except ValueError: # The view has changed.
    try:
     t = application.frame.results[0]
    except IndexError:
-    return None
+    pass # t is already None.
  return t
 
 def get_previous():
  """Get the previous track."""
+ if application.frame.repeat_track.IsChecked():
+  return application.track
  try:
   return application.frame.results[application.frame.results.index(application.track) - 1]
  except (IndexError, ValueError):
