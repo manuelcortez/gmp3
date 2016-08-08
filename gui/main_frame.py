@@ -13,7 +13,7 @@ from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from accessibility import output
 from functions.util import do_login, format_track, load_playlist, load_station
-from functions.google import playlist_action, artist_action, delete_station, add_to_playlist, load_artist_tracks, load_artist_top_tracks
+from functions.google import playlist_action, artist_action, delete_station, add_to_playlist, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
 from .audio_options import AudioOptions
 from .track_menu import TrackMenu
@@ -135,6 +135,7 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, self.load_related_artist, tm.Append(wx.ID_ANY, 'Go To &Related Artist...\tCTRL+7', 'Select an artist related to the artist of the currently selected result.'))
   self.Bind(wx.EVT_MENU, self.load_album, tm.Append(wx.ID_ANY, 'Go To A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
   self.Bind(wx.EVT_MENU, self.load_top_tracks, tm.Append(wx.ID_ANY, '&Top Tracks\tCTRL+;', 'Load the top tracks for the artist of the currently selected track.'))
+  self.Bind(wx.EVT_MENU, self.toggle_library, tm.Append(wx.ID_ANY, 'Add / Remove From &Library\tCTRL+/', 'Add or remove the currently selected track from library.'))
   self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, self.get_result()) if self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
   self.Bind(wx.EVT_MENU, lambda event: add_to_playlist(self.last_playlist, self.get_result()) if self.last_playlist is not None and self.self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To Most Recent Playlist\tCTRL+RETURN', 'Add the currently selected track to the most recent playlist.'))
   mb.Append(tm, '&Track')
@@ -553,3 +554,16 @@ class MainFrame(wx.Frame):
    application.stream.set_position(0)
   else:
    wx.Bell()
+ 
+ def toggle_library(self, event):
+  """Add or remove the currently selected track from the library."""
+  res = self.get_result()
+  if res is None:
+   wx.Bell()
+  else:
+   if res.in_library:
+    if wx.MessageBox('Remove %s from your library?' % res, 'Are You Sure', style = wx.ICON_QUESTION | wx.YES_NO) == wx.YES:
+     remove_from_library(res)
+   else:
+    add_to_library(res)
+    wx.MessageBox('%s was added to your library.' % res, 'Added')
