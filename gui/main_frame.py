@@ -119,6 +119,7 @@ class MainFrame(wx.Frame):
   self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_promoted_songs).start(), sm.Append(wx.ID_ANY, 'Promoted &Songs\tCTRL+P', 'Load promoted songs.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(self.queue, showing = showing.SHOWING_QUEUE), sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all(), showing = showing.SHOWING_CATALOGUE), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
+  self.Bind(wx.EVT_MENU, lambda event: self.add_results([x for x in session.query(Track).all() if x.downloaded is True], showing = showing.SHOWING_DOWNLOADED), sm.Append(wx.ID_ANY, '&Downloaded\tCTRL+D', 'Show all downloaded tracks.'))
   self.playlists_menu = wx.Menu()
   self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to load', 'Playlists', lambda playlist: self.add_results(playlist.tracks, showing = playlist)) if self.playlist_action is None else wx.Bell(), self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
   self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
