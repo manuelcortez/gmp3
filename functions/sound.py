@@ -16,7 +16,10 @@ def play(track):
  """Play a track."""
  if track is None:
   return # There's no track left to play.
- if not track.downloaded:
+ if track is application.track and application.stream:
+  track = application.track
+  stream = application.stream
+ elif not track.downloaded:
   try:
    url = application.api.get_stream_url(track.id)
    stream = URLStream(url.encode())

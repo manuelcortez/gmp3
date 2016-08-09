@@ -283,11 +283,11 @@ class MainFrame(wx.Frame):
  
  def on_activate(self, event):
   """Enter was pressed on a track."""
-  cr = self.view.GetSelection()
-  if cr == -1:
-   return wx.Bell()
+  res = self.get_result()
+  if res is None:
+   wx.Bell()
   else:
-   play(self.results[cr])
+   play(res)
    if interface_config['clear_queue']:
     self.queue = []
  
@@ -332,8 +332,8 @@ class MainFrame(wx.Frame):
  def play_pause(self, event):
   """Play or pause the current track."""
   if application.stream:
-   if application.stream.is_paused:
-    application.stream.play()
+   if application.stream.is_paused or application.stream.is_stopped:
+    application.stream.play(application.stream.is_stopped)
     self.play.SetLabel(PAUSE_LABEL)
    else:
     application.stream.pause()

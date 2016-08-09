@@ -10,7 +10,7 @@ class TrackMenu(BaseMenu):
   self.name = '&Track'
   super(TrackMenu, self).__init__()
   frame.Bind(wx.EVT_MENU, frame.select_playing, self.Append(wx.ID_ANY, '&Focus Playing\tALT+RETURN', 'Select the currently playing result.'))
-  frame.Bind(wx.EVT_MENU, frame.load_artist_tracks, self.Append(wx.ID_ANY, 'Goto &Artist\tCTRL+$', 'View all tracks by the artist of the currently focused track.'))
+  frame.Bind(wx.EVT_MENU, frame.load_artist_tracks, self.Append(wx.ID_ANY, 'Goto &Artist\tCTRL+4', 'View all tracks by the artist of the currently focused track.'))
   frame.Bind(wx.EVT_MENU, frame.load_related_artist, self.Append(wx.ID_ANY, 'Go To &Related Artist...\tCTRL+7', 'Select an artist related to the artist of the currently selected result.'))
   frame.Bind(wx.EVT_MENU, frame.load_current_album, self.Append(wx.ID_ANY, 'Go To A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
   frame.Bind(wx.EVT_MENU, frame.load_album, self.Append(wx.ID_ANY, '&Choose Album\tCTRL+6', 'Choose an album from the artist of the currently selected artist.'))
