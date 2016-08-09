@@ -12,7 +12,7 @@ class SourceMenu(BaseMenu):
   self.name = '&Source'
   super(SourceMenu, self).__init__()
   frame.Bind(wx.EVT_MENU, lambda event: Thread(target = frame.load_library,).start(), self.Append(wx.ID_ANY, '&Library\tCTRL+L', 'Load every song in your Google Music library.'))
-  frame.Bind(wx.EVT_MENU, lambda event: Thread(target = frame.load_promoted_songs).start(), self.Append(wx.ID_ANY, 'Promoted &Songs\tCTRL+P', 'Load promoted songs.'))
+  frame.Bind(wx.EVT_MENU, lambda event: Thread(target = frame.load_promoted_songs).start(), self.Append(wx.ID_ANY, 'Promoted &Songs\tCTRL+3', 'Load promoted songs.'))
   frame.Bind(wx.EVT_MENU, lambda event: frame.add_results(frame.queue, showing = showing.SHOWING_QUEUE), self.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
   frame.Bind(wx.EVT_MENU, lambda event: frame.add_results(session.query(Track).all(), showing = showing.SHOWING_CATALOGUE), self.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
   frame.Bind(wx.EVT_MENU, lambda event: frame.add_results([x for x in session.query(Track).all() if x.downloaded is True], showing = showing.SHOWING_DOWNLOADED), self.Append(wx.ID_ANY, '&Downloaded\tCTRL+D', 'Show all downloaded tracks.'))

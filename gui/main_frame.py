@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
 from accessibility import output
 from functions.util import do_login, format_track, load_playlist, load_station
-from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks
+from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from .menus.context import ContextMenu
 from .menus.main import MainMenu
@@ -344,11 +344,11 @@ class MainFrame(wx.Frame):
  
  def on_context(self, event):
   """Context menu for tracks view."""
-  cr = self.view.GetSelection()
-  if cr == -1:
+  res = self.get_result()
+  if res is None:
    wx.Bell()
   else:
-   self.PopupMenu(ContextMenu(self.results[cr]), wx.GetMousePosition())
+   self.PopupMenu(ContextMenu(res), wx.GetMousePosition())
   event.Skip()
  
  def on_previous(self, event):
@@ -409,8 +409,9 @@ class MainFrame(wx.Frame):
   self.add_results(self.results)
    
  def load_current_album(self, event):
-  cr = self.view.GetSelection()
-  if cr == -1:
+  """Load the album of the currently focused result."""
+  res = self.get_result()
+  if res is None:
    wx.Bell()
   else:
    def f(track):
@@ -420,7 +421,7 @@ class MainFrame(wx.Frame):
      wx.CallAfter(application.frame.add_results, album.get('tracks', []), showing = '%s - %s' % (track.artist, album.get('name', 'Unknown Album %s' % track.year)))
     except NotLoggedIn:
      do_login(callback = self.load_album)
-   Thread(target = f, args = [self.results[cr]]).start()
+   Thread(target = f, args = [res]).start()
  
  def get_result(self):
   """Return the currently focused result."""
@@ -516,26 +517,16 @@ class MainFrame(wx.Frame):
  
  def load_album(self, event):
   """Load an album from the currently selected artist."""
-  def f1(artist):
-   """Get the albums for artist, and pass them onto f2."""
-   wx.CallAfter(f2, application.api.get_artist_info(artist.id).get('albums', []))
-  def f2(albums):
-   """Build the dialog to choose an album."""
-   dlg = wx.SingleChoiceDialog(self, 'Select an album', 'Album Selection', ['%s (%s)' % (a.get('name', 'Unknown Album %s' % a['year']), a['year']) for a in albums])
-   if dlg.ShowModal() == wx.ID_OK:
-    Thread(target = f3, args = [albums[dlg.GetSelection()]['albumId']]).start()
-  def f3(id):
-   """Get the album and load it."""
-   try:
-    album = application.api.get_album_info(id)
-    wx.CallAfter(self.add_results, album.get('tracks', []), showing = '%s - %s' % (album.get('artist', 'Unknown Artist'), album.get('name', 'Unknown Album %s' % album['year'])))
-   except NotLoggedIn:
-    do_login(callback = f3, args = [id])
+  do_login()
+  def f(id):
+   """Get the album and load it from it's ID."""
+   album = application.api.get_album_info(id)
+   wx.CallAfter(self.add_results, album.get('tracks', []), showing = '%s - %s' % (album.get('artist', 'Unknown Artist'), album.get('name', 'Unknown Album %s' % album['year'])))
   res = self.get_result()
-  if res == -1:
+  if res is None:
    wx.Bell()
   else:
-   artist_action(res.artists, f1)
+   artist_action(res.artists, lambda artist: album_action(artist, f))
  
  def select_playing(self, event):
   """Select the currently playing track."""

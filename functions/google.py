@@ -1,11 +1,13 @@
 """Goele functions."""
 
-import application, wx
-from .util import do_login, do_error
+import application, wx, logging, six
+from .util import do_login, do_error, load_station
 from db import session, Playlist, PlaylistEntry
 from showing import SHOWING_LIBRARY
 from gmusicapi.exceptions import NotLoggedIn
 from threading import Thread
+
+logger = logging.getLogger(__name__)
 
 class PlaylistAction(object):
  """A playlist action to be performed once all playlists have been localised."""
@@ -142,3 +144,24 @@ def remove_from_library(track):
  except NotLoggedIn:
   do_login(callback = remove_from_library, args = [track])
 
+def create_station(field, data, name = ''):
+ """Creates a station with kwargs field = value."""
+ logger.debug('Creating station with %s = %s.', field, data)
+ assert isinstance(data, six.string_types), 'Invalid data: %s.' % data
+ name = wx.GetTextFromUser('Enter the name for the new radio station', caption = 'Create Station', default_value = name)
+ if name:
+  id = application.api.create_station(name, **{field: data})
+  s = load_station(dict(name = name, id = id))
+  return s
+
+def album_action(artist, callback, *args, **kwargs):
+ """Perform an action on an album."""
+ def f1(artist):
+  """Get the albums for artist, and pass them onto f2."""
+  wx.CallAfter(f2, application.api.get_artist_info(artist.id).get('albums', []))
+ def f2(albums):
+  """Build the dialog to choose an album."""
+  dlg = wx.SingleChoiceDialog(None, 'Select an album', 'Album Selection', ['%s (%s)' % (a.get('name', 'Unknown Album %s' % a['year']), a['year']) for a in albums])
+  if dlg.ShowModal() == wx.ID_OK:
+   Thread(target = callback, args = [albums[dlg.GetSelection()]['albumId'], *args], kwargs = kwargs).start()
+ Thread(target = f1, args = [artist]).start()
