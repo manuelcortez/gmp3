@@ -50,6 +50,8 @@ def delete_playlist(playlist):
  """Delete a playlist."""
  try:
   if application.api.delete_playlist(playlist.id) == playlist.id:
+   for e in playlist.entries:
+    session.delete(e)
    session.delete(playlist)
    if playlist in application.frame.playlists:
     application.frame.playlists_menu.Delete(application.frame.playlists[playlist])

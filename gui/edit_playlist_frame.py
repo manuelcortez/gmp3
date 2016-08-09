@@ -19,7 +19,7 @@ class EditPlaylistFrame(SizedFrame):
   self.name = wx.TextCtrl(p, value = playlist.name, style = wx.TE_RICH2)
   wx.StaticText(p, label = '&Description')
   self.description = wx.TextCtrl(p, value = playlist.description, style = wx.TE_MULTILINE | wx.TE_RICH2)
-  self.delete = wx.Button(p, label = '&Delete')
+  self.delete = wx.Button(p, label = 'D&elete')
   self.ok = wx.Button(p, label = '&OK')
   self.delete.Bind(wx.EVT_BUTTON, self.on_delete)
   self.ok.Bind(wx.EVT_BUTTON, self.on_ok)

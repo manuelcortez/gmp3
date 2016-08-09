@@ -35,7 +35,11 @@ class ContextMenu(wx.Menu):
   entry_item = self.AppendSubMenu(playlist_entries_menu, '&Remove from playlist', 'Remove this track from one of your playlists.')
   if track.playlist_entries:
    for e in track.playlist_entries:
-    self.Bind(wx.EVT_MENU, lambda event, entry = e: remove_from_playlist(e), playlist_entries_menu.Append(wx.ID_ANY, '&%s' % e.playlist.name, 'Remove this track from the %s playlist.' % e.playlist.name))
+    if e.playlist is None:
+     n = '<NONE>'
+    else:
+     n = e.playlist.name
+    self.Bind(wx.EVT_MENU, lambda event, entry = e: remove_from_playlist(e), playlist_entries_menu.Append(wx.ID_ANY, '&%s' % n, 'Remove this track from the %s playlist.' % n))
   else:
    entry_item.Enable(False)
   ratings_menu = wx.Menu()
