@@ -6,17 +6,16 @@ from random import shuffle
 from six import string_types
 from wxgoodies.keys import add_accelerator
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
-from config import save, system_config, interface_config, sections
+from config import save, system_config, interface_config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
-from configobj_dialog import ConfigObjDialog
 from gmusicapi.exceptions import NotLoggedIn
 from accessibility import output
 from functions.util import do_login, format_track, load_playlist, load_station
-from functions.google import playlist_action, artist_action, delete_station, add_to_playlist, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks
-from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount, queue
-from .audio_options import AudioOptions
-from .track_menu import TrackMenu
+from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks
+from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
+from .menus.context import ContextMenu
+from .menus.main import MainMenu
 from .edit_playlist_frame import EditPlaylistFrame
 
 SEARCH_LABEL = '&Find'
@@ -91,61 +90,7 @@ class MainFrame(wx.Frame):
   p.SetSizerAndFit(s)
   self.SetTitle()
   self.Bind(wx.EVT_CLOSE, self.on_close)
-  mb = wx.MenuBar()
-  fm = wx.Menu() # File menu.
-  self.offline_search = fm.AppendCheckItem(wx.ID_ANY, '&Offline Search', 'Search the local database rather than google')
-  self.offline_search.Check(system_config['offline_search'])
-  self.Bind(wx.EVT_MENU, lambda event: self.Close(True), fm.Append(wx.ID_EXIT, '&Quit', 'Exit the program.'))
-  mb.Append(fm, '&File')
-  pm = wx.Menu() # Play menu.
-  self.Bind(wx.EVT_MENU, self.play_pause, pm.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
-  self.Bind(wx.EVT_MENU, self.do_stop, pm.Append(wx.ID_ANY, '&Stop\tCTRL+.', 'Stop the currently playlist track.'))
-  self.Bind(wx.EVT_MENU, lambda event: queue(self.self.get_result()) if self.get_result() is not None else wx.Bell(), pm.Append(wx.ID_ANY, '&Queue Item\tSHIFT+RETURN', 'Add the currently focused track to the play queue.'))
-  self.Bind(wx.EVT_MENU, self.on_previous, pm.Append(wx.ID_ANY, '&Previous Track\tCTRL+LEFT', 'Play the previous track.'))
-  self.Bind(wx.EVT_MENU, self.on_next, pm.Append(wx.ID_ANY, '&Next Track\tCTRL+RIGHT', 'Play the next track.'))
-  self.Bind(wx.EVT_MENU, lambda event: set_volume(max(0, self.volume.GetValue() - 5)), pm.Append(wx.ID_ANY, 'Volume &Down\tCTRL+DOWN', 'Reduce volume by 5%.'))
-  self.Bind(wx.EVT_MENU, lambda event: set_volume(min(100, self.volume.GetValue() + 5)), pm.Append(wx.ID_ANY, 'Volume &Up\tCTRL+UP', 'Increase volume by 5%.'))
-  repeat_menu = wx.Menu()
-  self.repeat_off = repeat_menu.AppendRadioItem(wx.ID_ANY, '&Off', 'No repeat.')
-  self.repeat_track = repeat_menu.AppendRadioItem(wx.ID_ANY, '&Track', 'Repeat just the currently playlist track.')
-  self.repeat_all = repeat_menu.AppendRadioItem(wx.ID_ANY, '&All', 'Repeat all.')
-  [self.repeat_off, self.repeat_track, self.repeat_all][int(system_config['repeat'])].Check(True)
-  pm.AppendSubMenu(repeat_menu, '&Repeat', 'Repeat options')
-  add_accelerator(self, 'CTRL+R', self.cycle_repeat)
-  self.Bind(wx.EVT_MENU, self.on_shuffle, pm.Append(wx.ID_ANY, '&Shuffle\tCTRL+H', 'Shuffle the current view.'))
-  mb.Append(pm, '&Play')
-  sm = wx.Menu()
-  self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_library,).start(), sm.Append(wx.ID_ANY, '&Library\tCTRL+L', 'Load every song in your Google Music library.'))
-  self.Bind(wx.EVT_MENU, lambda event: Thread(target = self.load_promoted_songs).start(), sm.Append(wx.ID_ANY, 'Promoted &Songs\tCTRL+P', 'Load promoted songs.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.add_results(self.queue, showing = showing.SHOWING_QUEUE), sm.Append(wx.ID_ANY, '&Queue\tCTRL+SHIFT+Q', 'Show all tracks in the play queue.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.add_results(session.query(Track).all(), showing = showing.SHOWING_CATALOGUE), sm.Append(wx.ID_ANY, '&Catalogue\tCTRL+0', 'Load all songs which are stored in the local database.'))
-  self.Bind(wx.EVT_MENU, lambda event: self.add_results([x for x in session.query(Track).all() if x.downloaded is True], showing = showing.SHOWING_DOWNLOADED), sm.Append(wx.ID_ANY, '&Downloaded\tCTRL+D', 'Show all downloaded tracks.'))
-  self.playlists_menu = wx.Menu()
-  self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to load', 'Playlists', lambda playlist: self.add_results(playlist.tracks, showing = playlist)) if self.playlist_action is None else wx.Bell(), self.playlists_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+1', 'Load a playlist from google.'))
-  self.Bind(wx.EVT_MENU, self.edit_playlist, self.playlists_menu.Append(wx.ID_ANY, '&Edit Playlist...\tCTRL+SHIFT+E', 'Edit or delete a playlist.'))
-  sm.AppendSubMenu(self.playlists_menu, '&Playlists', 'Select ocal or a remote playlist to view.')
-  self.stations_menu = wx.Menu()
-  self.Bind(wx.EVT_MENU, self.load_remote_station, self.stations_menu.Append(wx.ID_ANY, '&Remote...\tCTRL+2', 'Load a readio station from Google.'))
-  self.delete_stations_menu = wx.Menu()
-  self.stations_menu.AppendSubMenu(self.delete_stations_menu, '&Delete')
-  sm.AppendSubMenu(self.stations_menu, '&Radio Stations', 'Locally stored and remote radio stations.')
-  mb.Append(sm, '&Source')
-  tm = wx.Menu()
-  self.Bind(wx.EVT_MENU, self.load_artist_tracks, tm.Append(wx.ID_ANY, 'Goto &Artist\tCTRL+$', 'View all tracks by the artist of the currently focused track.'))
-  self.Bind(wx.EVT_MENU, self.load_top_tracks, tm.Append(wx.ID_ANY, '&Load Artist &Top Tracks', 'Load the top tracks for the artist of the currently selected result.'))
-  self.Bind(wx.EVT_MENU, self.load_related_artist, tm.Append(wx.ID_ANY, 'Go To &Related Artist...\tCTRL+7', 'Select an artist related to the artist of the currently selected result.'))
-  self.Bind(wx.EVT_MENU, self.load_album, tm.Append(wx.ID_ANY, 'Go To A&lbum\tCTRL+5', 'Load the album of the currently selected track.'))
-  self.Bind(wx.EVT_MENU, self.load_top_tracks, tm.Append(wx.ID_ANY, '&Top Tracks\tCTRL+;', 'Load the top tracks for the artist of the currently selected track.'))
-  self.Bind(wx.EVT_MENU, self.toggle_library, tm.Append(wx.ID_ANY, 'Add / Remove From &Library\tCTRL+/', 'Add or remove the currently selected track from library.'))
-  self.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, self.get_result()) if self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
-  self.Bind(wx.EVT_MENU, lambda event: add_to_playlist(self.last_playlist, self.get_result()) if self.last_playlist is not None and self.self.get_result() is not None else wx.Bell(), tm.Append(wx.ID_ANY, 'Add To Most Recent Playlist\tCTRL+RETURN', 'Add the currently selected track to the most recent playlist.'))
-  mb.Append(tm, '&Track')
-  self.options_menu = wx.Menu()
-  for section in sections:
-   self.Bind(wx.EVT_MENU, lambda event, section = section: ConfigObjDialog(section).Show(True), self.options_menu.Append(wx.ID_ANY, '&%s...' % section.title, 'Edit the %s configuration.' % section.title))
-  self.Bind(wx.EVT_MENU, lambda event: AudioOptions(), self.options_menu.Append(wx.ID_ANY, '&Audio...\tF12', 'Configure advanced audio settings.'))
-  mb.Append(self.options_menu, '&Options')
-  self.SetMenuBar(mb)
+  self.SetMenuBar(MainMenu(self))
   self.Bind(wx.EVT_SHOW, self.on_show)
   self.playlists = {} # A list of playlist: id key: value pairs.
   playlists = session.query(Playlist).order_by(Playlist.name).all()
@@ -403,7 +348,7 @@ class MainFrame(wx.Frame):
   if cr == -1:
    wx.Bell()
   else:
-   self.PopupMenu(TrackMenu(self.results[cr]), wx.GetMousePosition())
+   self.PopupMenu(ContextMenu(self.results[cr]), wx.GetMousePosition())
   event.Skip()
  
  def on_previous(self, event):
@@ -463,7 +408,7 @@ class MainFrame(wx.Frame):
   shuffle(self.results)
   self.add_results(self.results)
    
- def load_album(self, event):
+ def load_current_album(self, event):
   cr = self.view.GetSelection()
   if cr == -1:
    wx.Bell()
@@ -568,3 +513,36 @@ class MainFrame(wx.Frame):
    else:
     add_to_library(res)
     wx.MessageBox('%s was added to your library.' % res, 'Added')
+ 
+ def load_album(self, event):
+  """Load an album from the currently selected artist."""
+  def f1(artist):
+   """Get the albums for artist, and pass them onto f2."""
+   wx.CallAfter(f2, application.api.get_artist_info(artist.id).get('albums', []))
+  def f2(albums):
+   """Build the dialog to choose an album."""
+   dlg = wx.SingleChoiceDialog(self, 'Select an album', 'Album Selection', ['%s (%s)' % (a.get('name', 'Unknown Album %s' % a['year']), a['year']) for a in albums])
+   if dlg.ShowModal() == wx.ID_OK:
+    Thread(target = f3, args = [albums[dlg.GetSelection()]['albumId']]).start()
+  def f3(id):
+   """Get the album and load it."""
+   try:
+    album = application.api.get_album_info(id)
+    wx.CallAfter(self.add_results, album.get('tracks', []), showing = '%s - %s' % (album.get('artist', 'Unknown Artist'), album.get('name', 'Unknown Album %s' % album['year'])))
+   except NotLoggedIn:
+    do_login(callback = f3, args = [id])
+  res = self.get_result()
+  if res == -1:
+   wx.Bell()
+  else:
+   artist_action(res.artists, f1)
+ 
+ def select_playing(self, event):
+  """Select the currently playing track."""
+  res = application.track
+  if res is None:
+   wx.Bell()
+  elif res in self.results:
+   self.view.SetSelection(self.results.index(res))
+  else:
+   self.add_results([res], showing = 'Currently Playing Track')

@@ -9,10 +9,10 @@ from db import session, Playlist
 from gmusicapi.exceptions import NotLoggedIn
 from threading import Thread
 
-class TrackMenu(wx.Menu):
+class ContextMenu(wx.Menu):
  def __init__(self, track):
   """Initialise with a track to populate the menu."""
-  super(TrackMenu, self).__init__()
+  super(ContextMenu, self).__init__()
   self.track = track
   self.Bind(wx.EVT_MENU, lambda event: play(track), self.Append(wx.ID_ANY, '&Play', 'Play %s.' % track))
   self.Bind(wx.EVT_MENU, lambda event: queue(track), self.Append(wx.ID_ANY, '&Queue Track', 'Add %s to the play queue.' % track))
