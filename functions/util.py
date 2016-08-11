@@ -79,3 +79,7 @@ def load_station(station):
  s.name = station.get('name', 'Untitled Radio Station')
  application.frame.add_station(s)
  return s
+
+def prune_library():
+ """Ensure the library doesn't grow too large."""
+ 

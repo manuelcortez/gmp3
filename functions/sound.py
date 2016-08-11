@@ -122,9 +122,6 @@ def set_output_device(name):
   except AttributeError: # There is no stream playing
    to_play = True
    pos = 0
-  application.output.free()
-  application.output = application.output.__class__()
-  logger.info('Set application.output to %s.', application.output)
   application.output.set_device(device)
   logger.info('Set output device to %s (%s).', name, device)
   application.stream = None # Calling .stop() on a stream after it's device has been dropped causes a traceback.
