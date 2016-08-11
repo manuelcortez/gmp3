@@ -151,5 +151,5 @@ validator = Validator()
 for section in config.sections:
  config.validate(validator, section = config[section])
 
-if application.output.find_device_by_name(system_config['output_device_name']) == system_config['output_device_index'] and system_config['output_device_index'] != application.output.device:
+if system_config['output_device_name'] in application.output.get_device_names() and application.output.find_device_by_name(system_config['output_device_name']) == system_config['output_device_index'] and system_config['output_device_index'] != application.output.device:
  application.output.device = system_config['output_device_index']
