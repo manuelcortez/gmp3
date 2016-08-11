@@ -8,6 +8,7 @@ class TrackMenu(BaseMenu):
  """The track menu."""
  def __init__(self, frame):
   self.name = '&Track'
+  self.frame = frame
   super(TrackMenu, self).__init__()
   frame.Bind(wx.EVT_MENU, frame.select_playing, self.Append(wx.ID_ANY, '&Focus Playing\tALT+RETURN', 'Select the currently playing result.'))
   frame.Bind(wx.EVT_MENU, frame.load_artist_tracks, self.Append(wx.ID_ANY, 'Goto &Artist\tCTRL+4', 'View all tracks by the artist of the currently focused track.'))

@@ -8,7 +8,8 @@ if __name__ == '__main__':
  try:
   import application
   logging.info('Starting %s, version %s.', application.name, application.__version__)
-  import db
+  import db, config
+  logging.info('Working out of directory: %s.', config.config_dir)
   db.Base.metadata.create_all()
   from gui.main_frame import MainFrame
   application.frame = MainFrame(None)

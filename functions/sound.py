@@ -15,7 +15,6 @@ seek_amount = 100000
 
 def play(track, play = True):
  """Play a track."""
- application.locked = False
  if track is None:
   return # There's no track left to play.
  if track is application.track and application.stream:
@@ -37,6 +36,8 @@ def play(track, play = True):
   application.stream.stop()
  if play:
   stream.play(True)
+ if application.frame.locked.IsChecked():
+  stream.lock()
  application.stream = stream
  set_pan(system_config['pan'])
  set_frequency(system_config['frequency'])
