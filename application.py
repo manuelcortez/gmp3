@@ -3,7 +3,7 @@
 import wx
 
 name = 'GMP3'
-__version__ = '3.0'
+__version__ = '3.1'
 
 app = wx.App()
 app.SetAppName(name)

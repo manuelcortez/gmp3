@@ -1,13 +1,15 @@
 """The track menu."""
 
-import wx, application
+import wx, application, logging
 from functions.google import playlist_action, add_to_playlist, remove_from_playlist, add_to_library, remove_from_library
-from functions.util import do_login, format_track, do_error
+from functions.util import do_login, format_track
 from functions.sound import play, queue, unqueue
 from functions.network import download_track
 from db import session, Playlist
 from gmusicapi.exceptions import NotLoggedIn
 from threading import Thread
+
+logger = logging.getLogger(__name__)
 
 class ContextMenu(wx.Menu):
  def __init__(self, track):
@@ -46,7 +48,7 @@ class ContextMenu(wx.Menu):
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(0), ratings_menu.Append(wx.ID_ANY, '&Unthumb', 'Unrate the track.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(1), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Down', 'Thumbs down this track.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(5), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Up', 'Thumbs up this track.'))
-  self.AppendSubMenu(ratings_menu, '&Rating', 'Rate the track.')
+  self.AppendSubMenu(ratings_menu, '&Thumb', 'Rate the track.')
   download = self.Append(wx.ID_ANY, '&Downloaded' if track.downloaded else '&Download', 'Download %s.' % track)
   if track.downloaded:
    download.Enable(False)
@@ -80,10 +82,11 @@ class ContextMenu(wx.Menu):
   
  def add_rating(self, rating):
   """Rate the current track."""
-  if not self.track.in_library:
-   do_error('To rate this track first add it to your library.')
+  if self.track.in_library:
+   d = {'id': self.track.id, 'rating': str(rating)}
   else:
-   application.api.change_song_metadata({'id': self.track.id, 'rating': str(rating)})
+   d = {'nid': self.track.store_id, 'storeId': self.track.store_id, 'kind': self.track.kind, 'trackType': self.track.track_type}
+  logger.info('Changing rating for track %s: %s.', self.track, application.api.change_song_metadata(d))
  
  def reload(self, event):
   """Reload the track from google."""

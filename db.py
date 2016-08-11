@@ -60,6 +60,7 @@ class Track(Base):
  filename = Column(String(length = 500), nullable = True, default = None)
  genre = Column(String(length = 100), nullable = False)
  id = Column(String(length = 30), nullable = True)
+ kind = Column(String(length = 10), nullable = False)
  last_played = Column(DateTime(), nullable = True, default = None)
  lyrics = Column(String(length = 100000), nullable = True)
  play_count = Column(Integer(), nullable = False)
@@ -67,6 +68,7 @@ class Track(Base):
  store_id = Column(String(length = 30), nullable = False)
  title = Column(String(length = 200), nullable = False)
  track_number = Column(Integer(), nullable = False)
+ track_type = Column(String(length = 5), nullable = False)
  year = Column(Integer(), nullable = False)
  
  @property
@@ -88,6 +90,7 @@ class Track(Base):
  def number(self):
   """Return the track number, padded with 0's."""
   return '%s%s' % ('0' if self.track_number is not None and self.track_number < 10 else '', self.track_number)
+ 
  def populate(self, d):
   """Populate from a dictionary d."""
   self.album = d.get('album', 'Unknown Album')
@@ -112,10 +115,12 @@ class Track(Base):
   self.id = d.get('id', self.id)
   if self.id is None:
    self.id = get_id(d)
+  self.kind = d['kind']
   self.play_count = d.get('playCount', 0)
   self.store_id = d.get('storeId', self.id)
   self.title = d.get('title', 'Untitled Track')
   self.track_number = d.get('trackNumber', 1)
+  self.track_type = d['trackType']
   self.year = d.get('year', 1)
  
  def __str__(self):
