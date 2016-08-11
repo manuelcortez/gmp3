@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 seek_amount = 100000
 
-def play(track, play = True):
+def play(track, immediately_play = True):
  """Play a track."""
  if track is None:
   return # There's no track left to play.
@@ -34,7 +34,7 @@ def play(track, play = True):
  track.last_played = datetime.now()
  if application.stream is not None:
   application.stream.stop()
- if play:
+ if immediately_play:
   stream.play(True)
  application.stream = stream
  set_pan(system_config['pan'])
@@ -125,7 +125,7 @@ def set_output_device(name):
   application.output.set_device(device)
   logger.info('Set output device to %s (%s).', name, device)
   application.stream = None # Calling .stop() on a stream after it's device has been dropped causes a traceback.
-  s = play(application.track, play = to_play)
+  s = play(application.track, immediately_play = to_play)
   if s is not None:
    s.set_position(pos)
   system_config['output_device_index'] = device

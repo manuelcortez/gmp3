@@ -75,6 +75,7 @@ spec['media_dir'] = 'string(default = "%s")' % os.path.join(config_dir, 'media')
 spec['quality'] = 'option("low", "med", "hi", default = "hi")'
 spec['download'] = 'boolean(default = True)'
 spec['lyrics'] = 'boolean(default = True)'
+spec['max_size'] = 'integer(min = 5, default = 1024)'
 storage_config.configspec = spec
 storage_config.names = {
  'media_dir': '&Media Directory',

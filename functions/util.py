@@ -1,13 +1,15 @@
 """Utility functions."""
 
-import application, wx
-from db import session, Playlist, Station, PlaylistEntry, to_object
-from config import interface_config
+import application, wx, os, os.path, logging
+from db import session, Track, Playlist, Station, PlaylistEntry, to_object
+from config import interface_config, storage_config
 from gui.login_frame import LoginFrame
 from gmusicapi.exceptions import AlreadyLoggedIn
 from sqlalchemy.orm.exc import NoResultFound
 from config import login_config
 from gmusicapi.exceptions import NotLoggedIn
+
+logger = logging.getLogger(__name__)
 
 def do_login(callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
  """Try to log in, then call callback."""
@@ -80,6 +82,34 @@ def load_station(station):
  application.frame.add_station(s)
  return s
 
+def clean_library():
+ """Remove unwanted files and directories from the media directory."""
+ dir = storage_config['media_dir']
+ for thing in os.listdir(dir):
+  path = os.path.join(dir, thing)
+  if os.path.isdir(path):
+   os.removedirs(path)
+  else:
+   id, ext = os.path.splitext(thing)
+   if not session.query(Track).filter(Track.id == id).count():
+    os.remove(path)
+
 def prune_library():
- """Ensure the library doesn't grow too large."""
- 
+ """Delete the least recently downloaded tracks in the catalogue."""
+ goal = application.library_size - storage_config['max_size'] * (1024 ** 2)
+ if goal > 0:
+  logger.info('Pruning %.2f mb of data...', goal / (1024 ** 2))
+  for r in session.query(Track).filter(Track.last_played != None).order_by(Track.last_played.asc()).all():
+   if r.downloaded:
+    size = os.path.getsize(r.path)
+    logger.info('Deleting %s (%.2f mb).', r, size / (1024 ** 2))
+    goal -= size
+    application.library_size -= size
+    os.remove(r.path)
+    if goal <= 0:
+     logger.info('Done.')
+     break
+  else:
+   logger.info('Failed. %s b (%.2f mb) left.', goal, goal / (1024 ** 2))
+ else:
+  logger.info('No need for prune. %.2f mb left.', (goal * -1) / (1024 ** 2))

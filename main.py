@@ -8,7 +8,10 @@ if __name__ == '__main__':
  try:
   import application
   logging.info('Starting %s, version %s.', application.name, application.__version__)
-  import db, config
+  import db, config, os, os.path
+  dir = config.storage_config['media_dir']
+  application.library_size = sum([os.path.getsize(os.path.join(dir, x)) for x in os.listdir(dir) if os.path.isfile(os.path.join(dir, x))])
+  logging.info('Library size is %s b (%.2f mb).', application.library_size, application.library_size / (1024 ** 2))
   logging.info('Working out of directory: %s.', config.config_dir)
   db.Base.metadata.create_all()
   from gui.main_frame import MainFrame

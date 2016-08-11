@@ -1,6 +1,6 @@
 """The track menu."""
 
-import wx, application, logging
+import wx, application, logging, os
 from functions.google import playlist_action, add_to_playlist, remove_from_playlist, add_to_library, remove_from_library
 from functions.util import do_login, format_track
 from functions.sound import play, queue, unqueue
@@ -49,23 +49,19 @@ class ContextMenu(wx.Menu):
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(1), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Down', 'Thumbs down this track.'))
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(5), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Up', 'Thumbs up this track.'))
   self.AppendSubMenu(ratings_menu, '&Thumb', 'Rate the track.')
-  download = self.Append(wx.ID_ANY, '&Downloaded' if track.downloaded else '&Download', 'Download %s.' % track)
-  if track.downloaded:
-   download.Enable(False)
-  else:
-   self.Bind(wx.EVT_MENU, self.download, download)
+  self.Bind(wx.EVT_MENU, lambda event: os.remove(track.path) if track.downloaded else self.download(), self.Append(wx.ID_ANY, 'Remove &Download' if track.downloaded else '&Download', 'Manage the downloaded state of this track.'))
   self.Bind(wx.EVT_MENU, self.save_track, self.Append(wx.ID_ANY, '&Save Track...', 'Save the track to disk.'))
   self.Bind(wx.EVT_MENU, self.reload, self.Append(wx.ID_ANY, '&Reindex', 'Reindex the track from Google.'))
  
- def download(self, event, track = None):
+ def download(self, track = None):
   """Download was clicked."""
   if track is None:
    track = self.track
   try:
    url = application.api.get_stream_url(track.id)
+   download_track(url, track.path)
   except NotLoggedIn:
-   return do_login(callback = self.download, args = [event], kwargs = {'track': track})
-  download_track(url, track.path)
+   return do_login(callback = self.download, kwargs = dict(track = track))
  
  def save_track(self, event, path = None):
   """Save the track to disk."""
