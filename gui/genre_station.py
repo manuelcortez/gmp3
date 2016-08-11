@@ -14,25 +14,25 @@ class GenreStation(SizedFrame):
   p = self.GetContentsPane()
   wx.StaticText(p, label = '&Name')
   self.name = wx.TextCtrl(p, style = wx.TE_RICH2)
-  self.genres = []
-  wx.StaticText(p, label = '&Genres')
-  self.main_genre = wx.ListBox(p, choices = [x['name'] for x in self.genres])
-  self.main_genre.Bind(wx.EVT_LISTBOX, self.update_sub_genres)
-  self.main_genre.Bind(wx.EVT_LISTBOX, self.update_name)
-  do_login(callback = self.update_genres, args = [None])
-  wx.StaticText(p, label = '&Sub Genre')
-  self.sub_genre = wx.ListBox(p)
-  self.sub_genre.Bind(wx.EVT_LISTBOX, self.update_name)
+  self.genres = [] # The ids for add_station.
+  wx.StaticText(p, label = '&Genre')
+  self.genre = wx.ListBox(p)
+  self.genre.Bind(wx.EVT_LISTBOX, self.update_name)
+  do_login(callback = self.update_genres)
   self.ok = wx.Button(p, label = '&OK')
   self.ok.SetDefault()
   self.ok.Bind(wx.EVT_BUTTON, self.on_ok)
   wx.Button(p, label = '&Cancel').Bind(wx.EVT_BUTTON, lambda event: self.Close(True))
  
- def update_genres(self, event):
+ def update_genres(self):
   """Update the main genre list."""
-  self.main_genre.Clear()
-  self.genres = application.api.get_genres()
-  self.main_genre.AppendItems([x['name'] for x in self.genres])
+  self.genre.Clear()
+  for g in application.api.get_genres():
+   self.genres.append(g['id'])
+   self.genre.Append(g['name'])
+   for c in g.get('children', []):
+    self.genres.append(c)
+    self.genre.Append(c.replace('_', ' '))
  
  def get_main_genre(self):
   """Get the main genre."""
@@ -51,28 +51,22 @@ class GenreStation(SizedFrame):
   else:
    return g['children'][cr]
  
- def update_sub_genres(self, event):
-  """Update the sub genres list."""
-  g = self.get_main_genre()
-  if g is not None:
-   self.sub_genre.Clear()
-   print('Genre is %s.' % g)
-   self.sub_genre.AppendItems([x.replace('_', ' ') for x in g.get('children', [])])
- 
  def update_name(self, event):
   """Update the name field according to the contents of the two genre boxes."""
-  sub = self.get_sub_genre()
-  if sub is None:
-   main = self.get_main_genre()
-   if main is None:
-    name = 'Nothing'
-   else:
-    print(main.keys())
-    name = main['name']
-  else:
-   name = sub
-  self.name.SetValue('Genre station for %s' % name.replace('_', ' '))
+  self.name.SetValue('Genre station for %s' % self.genre.GetStringSelection())
  
  def on_ok(self, event):
   """The OK button was pressed."""
-  do_error('You chose %s.' % self.get_sub_genre())
+  cr = self.genre.GetSelection()
+  if cr == -1:
+   do_error('You must select a genre to seed from.')
+  else:
+   genre = self.genres[cr]
+   name = self.name.GetValue()
+   if name:
+    s = create_station('genre_id', genre, name = name)
+    if name is not None:
+     application.frame.load_station(s)
+    self.Close(True)
+   else:
+    do_error('You must provide a name.')

@@ -148,7 +148,8 @@ def create_station(field, data, name = ''):
  """Creates a station with kwargs field = value."""
  logger.debug('Creating station with %s = %s.', field, data)
  assert isinstance(data, six.string_types), 'Invalid data: %s.' % data
- name = wx.GetTextFromUser('Enter the name for the new radio station', caption = 'Create Station', default_value = name)
+ if not name:
+  name = wx.GetTextFromUser('Enter the name for the new radio station', caption = 'Create Station')
  if name:
   id = application.api.create_station(name, **{field: data})
   s = load_station(dict(name = name, id = id))

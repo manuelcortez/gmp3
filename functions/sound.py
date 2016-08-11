@@ -36,8 +36,6 @@ def play(track, play = True):
   application.stream.stop()
  if play:
   stream.play(True)
- if application.frame.locked.IsChecked():
-  stream.lock()
  application.stream = stream
  set_pan(system_config['pan'])
  set_frequency(system_config['frequency'])

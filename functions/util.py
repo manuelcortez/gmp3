@@ -74,8 +74,8 @@ def load_station(station):
   s = session.query(Station).filter(Station.id == station['id']).one()
  except NoResultFound:
   s = Station()
+  s.id = station['id']
  session.add(s)
- s.id = station['id']
  s.name = station.get('name', 'Untitled Radio Station')
  application.frame.add_station(s)
  return s
