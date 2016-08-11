@@ -127,6 +127,8 @@ spec['frequency'] = 'integer(min = {}, max = {}, default = 44100)'.format(min_fr
 spec['pan'] = 'integer(min = 0, max = 100, default = 50)'
 spec['offline_search'] = 'boolean(default = False)'
 spec['repeat'] = 'option(0, 1, 2, default = 0)'
+spec['output_device_index'] = 'integer(default = %s)' % application.output.device
+spec['output_device_name'] = 'string(default = "%s")' % application.output.get_device_names()[application.output.device]
 system_config.configspec = spec
 
 def system_config_updated():
@@ -146,3 +148,6 @@ sections = [
 validator = Validator()
 for section in config.sections:
  config.validate(validator, section = config[section])
+
+if application.output.find_device_by_name(system_config['output_device_name']) == system_config['output_device_index'] and system_config['output_device_index'] != application.output.device:
+ application.output.device = system_config['output_device_index']

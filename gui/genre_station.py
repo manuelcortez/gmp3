@@ -56,6 +56,7 @@ class GenreStation(SizedFrame):
   g = self.get_main_genre()
   if g is not None:
    self.sub_genre.Clear()
+   print('Genre is %s.' % g)
    self.sub_genre.AppendItems([x.replace('_', ' ') for x in g.get('children', [])])
  
  def update_name(self, event):

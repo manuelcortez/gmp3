@@ -58,6 +58,7 @@ class MainFrame(wx.Frame):
   self.view = wx.ListBox(p)
   add_accelerator(self.view, 'RETURN', self.on_activate)
   add_accelerator(self.view, 'SPACE', self.play_pause)
+  add_accelerator(self, 'SHIFT+SPACE', self.lock_track)
   self.view.SetFocus()
   self.view.Bind(wx.EVT_CONTEXT_MENU, self.on_context)
   vs.Add(self.view, 1, wx.GROW)
@@ -537,3 +538,12 @@ class MainFrame(wx.Frame):
    self.view.SetSelection(self.results.index(res))
   else:
    self.add_results([res], showing = 'Currently Playing Track')
+ 
+ def lock_track(self, event):
+  """Lock or unlock the track."""
+  if application.locked:
+   application.stream.unlock()
+   application.locked = False
+  else:
+   application.stream.lock()
+   application.locked = True

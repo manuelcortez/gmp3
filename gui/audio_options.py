@@ -4,7 +4,7 @@ from wx.lib.sized_controls import SizedFrame
 from wx.lib.intctrl import IntCtrl, EVT_INT
 from wxgoodies.keys import add_accelerator
 from config import system_config, min_frequency, max_frequency
-from functions.sound import set_volume, set_pan, set_frequency
+from functions.sound import set_output_device, set_volume, set_pan, set_frequency
 import application, wx
 
 class AudioOptions(SizedFrame):
@@ -16,6 +16,10 @@ class AudioOptions(SizedFrame):
   self.default_frequency = system_config['frequency']
   self.default_pan = system_config['pan']
   p.SetSizerType('form')
+  wx.StaticText(p, label = '&Output Device')
+  self.device = wx.Choice(p, choices = sorted(application.output.get_device_names()))
+  self.device.SetStringSelection(system_config['output_device_name'])
+  self.device.Bind(wx.EVT_CHOICE, lambda event: set_output_device(self.device.GetStringSelection()))
   wx.StaticText(p, label = '&Volume')
   self.volume = wx.Slider(p, style = wx.VERTICAL)
   self.volume.SetValue(self.default_volume)
