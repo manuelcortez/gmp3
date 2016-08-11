@@ -3,6 +3,7 @@
 import application, logging
 from threading import Thread
 from datetime import datetime
+from random import choice
 from .util import do_login
 from .network import download_track
 from config import storage_config, system_config
@@ -53,6 +54,13 @@ def get_next(remove = True):
   if remove:
    application.frame.queue.remove(t)
  else:
+  if application.frame.shuffle.IsChecked():
+   if remove:
+    t = choice([x for x in application.frame.results if x not in application.frame.played])
+    application.frame.played.append(t)
+    return t
+   else:
+    return None
   try:
    t = application.frame.results[application.frame.results.index(application.track) + 1]
   except IndexError: # We're at the end.

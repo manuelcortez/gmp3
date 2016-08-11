@@ -2,7 +2,6 @@
 
 import wx, application, showing
 from threading import Thread
-from random import shuffle
 from six import string_types
 from wxgoodies.keys import add_accelerator
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
@@ -27,6 +26,7 @@ class MainFrame(wx.Frame):
  """The main frame."""
  def __init__(self, *args, **kwargs):
   super(MainFrame, self).__init__(*args, **kwargs)
+  self.played = [] # The tracks from the current view which have already been played.
   self.last_playlist = None # The playlist that most recently had a track added to it.
   self.playlist_action = None # An action to be called when all playlists have been localised.
   self.autoload = [] # Tracks to autoload in order.
@@ -173,6 +173,7 @@ class MainFrame(wx.Frame):
    showing = self.showing
   self.showing = showing
   if clear:
+   self.played = [] # Clear the played tracks queue.
    self.view.Clear()
    self.results = []
    self.autoload = []
@@ -269,6 +270,7 @@ class MainFrame(wx.Frame):
    application.stream.stop()
   if application.old_stream:
    application.old_stream.stop()
+  system_config['shuffle'] = self.shuffle.IsChecked()
   system_config['offline_search'] = self.offline_search.IsChecked()
   system_config['volume'] = self.volume.GetValue()
   if self.repeat_track.IsChecked():
@@ -403,12 +405,6 @@ class MainFrame(wx.Frame):
   except NotLoggedIn:
    do_login(callback = self.load_station, args = [station])
  
- def on_shuffle(self, event):
-  """Shuffle tracks."""
-  self.autoload = []
-  shuffle(self.results)
-  self.add_results(self.results)
-   
  def load_current_album(self, event):
   """Load the album of the currently focused result."""
   res = self.get_result()

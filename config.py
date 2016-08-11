@@ -121,6 +121,7 @@ db_config.names = {
 config['system'] = config.get('system', {})
 system_config = config['system']
 spec = ConfigObj()
+spec['shuffle'] = 'boolean(default = False)'
 spec['volume'] = 'integer(min = 0, max = 100, default = 100)'
 min_frequency = 100
 max_frequency = 200000
