@@ -5,7 +5,7 @@ from threading import Thread
 from six import string_types
 from wxgoodies.keys import add_accelerator
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
-from config import save, system_config, interface_config
+from config import save, system_config, interface_config, sound_config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
@@ -323,7 +323,7 @@ class MainFrame(wx.Frame):
    length = application.stream.get_length()
    if not self.position.HasFocus():
     self.position.SetValue(int(pos * (100 / length)))
-   if pos == length:
+   if (length - pos) <= sound_config['fadeout_threshold']:
     n = get_next(remove = True)
     if n is None:
      self.SetTitle()
@@ -366,7 +366,8 @@ class MainFrame(wx.Frame):
   """Play the next track."""
   t = get_next(remove = True)
   if t:
-   play(t)
+   if application.stream:
+    play(t)
   else:
    wx.Bell()
  

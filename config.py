@@ -31,6 +31,19 @@ config = ConfigObj(os.path.join(config_dir, 'config.ini')) # The main configurat
 
 # Create individual configuration sections:
 
+# Sound Configuration.
+config['sound'] = config.get('sound', {})
+sound_config = config['sound']
+sound_config.title = 'Sound'
+spec = ConfigObj()
+spec['fadeout_threshold'] = 'integer(min = 0, default = 0)'
+spec['fadeout_amount'] = 'float(max = 1.0, min = -0.00001, default = 1.0)'
+sound_config.configspec = spec
+sound_config.names = {
+ 'fadeout_threshold': 'Remaining Samples Before &Fadeout',
+ 'fadeout_amount': 'Fadeout &Amount'
+}
+
 # Login configuration.
 config['login'] = config.get('login', {})
 login_config = config['login']
@@ -141,6 +154,7 @@ def system_config_updated():
 # 
 # Add all configuration sections to the below list in the order they should appear in the Options menu.
 sections = [
+ sound_config,
  login_config,
  interface_config,
  storage_config,

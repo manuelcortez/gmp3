@@ -4,9 +4,10 @@ import application, logging
 from threading import Thread
 from datetime import datetime
 from random import choice
+from time import time, sleep
 from .util import do_login
 from .network import download_track
-from config import storage_config, system_config
+from config import storage_config, system_config, sound_config
 from showing import SHOWING_QUEUE
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
@@ -34,7 +35,10 @@ def play(track, immediately_play = True):
  application.track = track
  track.last_played = datetime.now()
  if application.stream is not None:
-  application.stream.stop()
+  if fadeout:
+   Thread(target = fadeout, args = [application.stream]).start()
+  else:
+   application.stream.stop()
  if immediately_play:
   stream.play(True)
  application.stream = stream
@@ -138,3 +142,15 @@ def set_output_device(name):
    s.set_position(pos)
   system_config['output_device_index'] = device
   system_config['output_device_name'] = name
+
+def fadeout(stream):
+ """Fade out and stop a stream."""
+ started = time()
+ logger.info('Fading out stream %s.', stream)
+ while stream.volume > 0.0:
+  v = max(0.0, stream.volume - sound_config['fadeout_amount'])
+  logger.info('Setting stream volume to %.2f.', v)
+  stream.volume = v
+  sleep(0.2)
+ stream.stop()
+ logger.info('Stopped the stream after %.2f seconds.', time() - started)
