@@ -270,6 +270,7 @@ class MainFrame(wx.Frame):
    application.stream.stop()
   if application.old_stream:
    application.old_stream.stop()
+  system_config['stop_after'] = self.stop_after.IsChecked()
   system_config['shuffle'] = self.shuffle.IsChecked()
   system_config['offline_search'] = self.offline_search.IsChecked()
   system_config['volume'] = self.volume.GetValue()
@@ -323,12 +324,13 @@ class MainFrame(wx.Frame):
    length = application.stream.get_length()
    if not self.position.HasFocus():
     self.position.SetValue(int(pos * (100 / length)))
-   if (length - pos) <= sound_config['fadeout_threshold']:
-    n = get_next(remove = True)
-    if n is None:
-     self.SetTitle()
+   stop_after = self.stop_after.IsChecked()
+   if (length - pos) <= (0 if stop_after else sound_config['fadeout_threshold']):
+    if stop_after:
+     n = None
     else:
-     play(n)
+     n = get_next(remove = True)
+    play(n)
   else:
    self.position.SetValue(0)
  
@@ -418,7 +420,7 @@ class MainFrame(wx.Frame):
      album = application.api.get_album_info(track.album_id)
      wx.CallAfter(application.frame.add_results, album.get('tracks', []), showing = '%s - %s' % (track.artist, album.get('name', 'Unknown Album %s' % track.year)))
     except NotLoggedIn:
-     do_login(callback = self.load_album)
+     do_login(callback = f, args = [track])
    Thread(target = f, args = [res]).start()
  
  def get_result(self):

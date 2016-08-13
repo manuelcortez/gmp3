@@ -17,33 +17,31 @@ seek_amount = 100000
 
 def play(track, immediately_play = True):
  """Play a track."""
- if track is None:
-  return # There's no track left to play.
- if track is application.track and application.stream:
-  track = application.track
-  stream = application.stream
- elif not track.downloaded:
-  try:
-   url = application.api.get_stream_url(track.id)
-   stream = URLStream(url.encode())
-   if storage_config['download']:
-    Thread(target = download_track, args = [url, track.path]).start()
-  except NotLoggedIn:
-   return do_login(callback = play, args = [track])
- else:
-  stream = FileStream(file = track.path)
- application.track = track
- track.last_played = datetime.now()
- if application.stream is not None:
-  if fadeout:
-   Thread(target = fadeout, args = [application.stream]).start()
+ if track is not None:
+  if track is application.track and application.stream:
+   stream = application.stream
+  elif not track.downloaded:
+   try:
+    url = application.api.get_stream_url(track.id)
+    stream = URLStream(url.encode())
+    if storage_config['download']:
+     Thread(target = download_track, args = [url, track.path]).start()
+   except NotLoggedIn:
+    return do_login(callback = play, args = [track])
   else:
-   application.stream.stop()
- if immediately_play:
-  stream.play(True)
+   stream = FileStream(file = track.path)
+  track.last_played = datetime.now()
+  if stream is not application.stream and application.stream is not None:
+   Thread(target = fadeout, args = [application.stream]).start()
+  if immediately_play:
+   stream.play(True)
+  set_pan(system_config['pan'])
+  set_frequency(system_config['frequency'])
+ else:
+  track = None
+  stream = None
+ application.track = track
  application.stream = stream
- set_pan(system_config['pan'])
- set_frequency(system_config['frequency'])
  application.frame.SetTitle()
  application.frame.update_labels()
  return stream

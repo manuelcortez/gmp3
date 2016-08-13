@@ -4,6 +4,7 @@ import application, os, os.path, wx
 from wx.lib.filebrowsebutton import DirBrowseButton
 from configobj import ConfigObj
 from validate import Validator
+from gui.widgets import StringChoice, FloatSpin
 
 config_dir = application.paths.GetUserLocalDataDir()
 
@@ -42,6 +43,9 @@ sound_config.configspec = spec
 sound_config.names = {
  'fadeout_threshold': 'Remaining Samples Before &Fadeout',
  'fadeout_amount': 'Fadeout &Amount'
+}
+sound_config.controls = {
+ 'fadeout_amount': lambda dlg, name, value: FloatSpin(dlg.panel, value = value)
 }
 
 # Login configuration.
@@ -97,22 +101,9 @@ storage_config.names = {
  'lyrics': 'Download &Lyrics',
 }
 
-class QualityChoice(wx.Choice):
- def __init__(self, dlg, name, value):
-  super(QualityChoice, self).__init__(dlg.panel, choices = ['hi', 'med', 'low'])
-  self.SetValue(value)
- 
- def GetValue(self):
-  """Get the value of this control as a string."""
-  return self.GetStringSelection()
- 
- def SetValue(self, value):
-  """Set the value of this control."""
-  return self.SetStringSelection(value)
-
 storage_config.controls = {
  'media_dir': make_dir_browser,
- 'quality': QualityChoice
+ 'quality': lambda dlg, name, value: StringChoice(dlg.panel, value, choices = ['hi', 'med', 'low'])
 }
 
 # Database configuration.
@@ -134,6 +125,7 @@ db_config.names = {
 config['system'] = config.get('system', {})
 system_config = config['system']
 spec = ConfigObj()
+spec['stop_after'] = 'boolean(default = False)'
 spec['shuffle'] = 'boolean(default = False)'
 spec['volume'] = 'integer(min = 0, max = 100, default = 100)'
 min_frequency = 100

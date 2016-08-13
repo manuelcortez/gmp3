@@ -13,6 +13,8 @@ class PlayMenu(BaseMenu):
   super(PlayMenu, self).__init__()
   frame.Bind(wx.EVT_MENU, frame.play_pause, self.Append(wx.ID_ANY, '&Play / Pause', 'Play or pause the current track.'))
   frame.Bind(wx.EVT_MENU, frame.do_stop, self.Append(wx.ID_ANY, '&Stop\tCTRL+.', 'Stop the currently playlist track.'))
+  frame.stop_after = self.AppendCheckItem(wx.ID_ANY, 'Stop &After Current Track\tCTRL+SHIFT+.', 'Stop when the currently playing track has finished playing.')
+  frame.stop_after.Check(system_config['stop_after'])
   frame.Bind(wx.EVT_MENU, lambda event: queue(frame.get_result()) if frame.get_result() is not None else wx.Bell(), self.Append(wx.ID_ANY, '&Queue Item\tSHIFT+RETURN', 'Add the currently focused track to the play queue.'))
   frame.Bind(wx.EVT_MENU, frame.on_previous, self.Append(wx.ID_ANY, '&Previous Track\tCTRL+LEFT', 'Play the previous track.'))
   frame.Bind(wx.EVT_MENU, frame.on_next, self.Append(wx.ID_ANY, '&Next Track\tCTRL+RIGHT', 'Play the next track.'))
