@@ -532,8 +532,9 @@ class MainFrame(wx.Frame):
   """Select the currently playing track."""
   res = application.track
   if res is None:
-   wx.Bell()
+   return wx.Bell()
   elif res in self.results:
    self.view.SetSelection(self.results.index(res))
   else:
    self.add_results([res], showing = 'Currently Playing Track')
+  self.view.SetFocus()
