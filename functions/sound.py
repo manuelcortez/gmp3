@@ -2,6 +2,7 @@
 
 import application, logging
 from threading import Thread
+from math import pow
 from datetime import datetime
 from random import choice
 from time import time, sleep
@@ -11,6 +12,7 @@ from config import storage_config, system_config, sound_config
 from showing import SHOWING_QUEUE
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
+
 logger = logging.getLogger(__name__)
 
 seek_amount = 100000
@@ -88,9 +90,11 @@ def get_previous():
 
 def set_volume(value):
  """Set volume to value."""
+ actual_value = ((pow(sound_config['volume_base'], value / 100) - 1) / (sound_config['volume_base'] - 1)) * 100
  system_config['volume'] = value
- application.output.set_volume(value)
+ application.output.set_volume(actual_value)
  application.frame.volume.SetValue(value)
+ logger.info('Set volume to %.2f (%s%%).', actual_value, value)
 
 def set_pan(value):
  """Set pan to value."""

@@ -39,13 +39,16 @@ sound_config.title = 'Sound'
 spec = ConfigObj()
 spec['fadeout_threshold'] = 'integer(min = 0, default = 0)'
 spec['fadeout_amount'] = 'float(max = 1.0, min = -0.00001, default = 1.0)'
+spec['volume_base'] = 'float(min = 1.00001, default = 5.0)'
 sound_config.configspec = spec
 sound_config.names = {
  'fadeout_threshold': 'Remaining Samples Before &Fadeout',
- 'fadeout_amount': 'Fadeout &Amount'
+ 'fadeout_amount': 'Fadeout &Amount',
+ 'volume_base': '&Volume Logarithm Base'
 }
 sound_config.controls = {
- 'fadeout_amount': lambda dlg, name, value: FloatSpin(dlg.panel, value = value)
+ 'fadeout_amount': lambda dlg, name, value: FloatSpin(dlg.panel, value = value),
+ 'volume_base': lambda dlg, name, value: FloatSpin(dlg.panel, value = value)
 }
 
 # Login configuration.
