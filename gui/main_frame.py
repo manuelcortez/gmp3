@@ -1,6 +1,6 @@
 """The main frame."""
 
-import wx, application, showing
+import wx, application, showing, logging
 from threading import Thread
 from six import string_types
 from wxgoodies.keys import add_accelerator
@@ -9,7 +9,6 @@ from config import save, system_config, interface_config, sound_config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
-from accessibility import output
 from functions.util import do_login, format_track, load_playlist, load_station, clean_library
 from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
@@ -17,6 +16,7 @@ from .menus.context import ContextMenu
 from .menus.main import MainMenu
 from .edit_playlist_frame import EditPlaylistFrame
 
+logger = logging.getLogger(__name__)
 SEARCH_LABEL = '&Find'
 SEARCHING_LABEL = '&Searching...'
 PLAY_LABEL = '&Play'
@@ -490,8 +490,7 @@ class MainFrame(wx.Frame):
   else:
    self.repeat_off.Check(True)
    mode = 'off'
-   
-  output.speak('Repeat %s.' % mode)
+  logger.info('Set repeat mode to %s.' % mode)
  
  def do_stop(self, event):
   """Stop the currently playing track."""
