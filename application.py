@@ -21,3 +21,4 @@ track = None # The current track.
 stream = None # The stream of the currently playing track.
 
 library_size = 0 # The size of the library in bytes.
+logging_in = False # To prevent the killer bug that makes the timer try and pop up billions of login windows.

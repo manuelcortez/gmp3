@@ -1,8 +1,8 @@
 """A login frame."""
 
+import application, wx
 from simpleconf.dialogs.wx import SimpleConfWxDialog
 from config import config
-from application import api
 from gmusicapi.exceptions import AlreadyLoggedIn
 
 class LoginFrame(SimpleConfWxDialog):
@@ -11,6 +11,16 @@ class LoginFrame(SimpleConfWxDialog):
   self.args = args
   self.kwargs = kwargs
   super(LoginFrame, self).__init__(config.login)
+  self.Bind(wx.EVT_CLOSE, self.on_close)
+ 
+ def on_close(self, event):
+  """The window is about to close, reset application.logging_in."""
+  application.logging_in = False
+  if application.stream:
+   application.stream.set_position(max(0, application.stream.get_position() - 1))
+   application.frame.SetTitle()
+   application.stream.stop()
+  event.Skip()
  
  def on_ok(self, event):
   """Try to login."""
@@ -22,7 +32,7 @@ class LoginFrame(SimpleConfWxDialog):
     self.section['uid'] = ''
     self.section['pwd'] = ''
    try:
-    res = api.login(uid, pwd, api.FROM_MAC_ADDRESS)
+    res = application.api.login(uid, pwd, application.api.FROM_MAC_ADDRESS)
    except AlreadyLoggedIn:
     return self.on_error('You are already logged in.')
    if not res:

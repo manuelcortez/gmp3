@@ -12,12 +12,19 @@ logger = logging.getLogger(__name__)
 
 def do_login(callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
  """Try to log in, then call callback."""
+ def f(callback, *args, **kwargs):
+  application.logging_in = False # Free it up so more login attempts can be made if needed.
+  return callback(*args, **kwargs)
+ if application.logging_in:
+  return # Don't try again.
+ application.logging_in = True
+ args.insert(0, callback)
  try:
   if not application.api.login(config.login['uid'], config.login['pwd'], application.api.FROM_MAC_ADDRESS):
-   return LoginFrame(callback = callback, args = args, kwargs = kwargs).Show(True)
+   return LoginFrame(callback = f, args = args, kwargs = kwargs).Show(True)
  except AlreadyLoggedIn:
   pass
- return callback(*args, **kwargs)
+ return f(*args, **kwargs)
 
 def load_playlist(playlist):
  """Load a playlist into the database."""
