@@ -24,7 +24,7 @@ class PlayMenu(BaseMenu):
   frame.repeat_off = repeat_menu.AppendRadioItem(wx.ID_ANY, '&Off', 'No repeat.')
   frame.repeat_track = repeat_menu.AppendRadioItem(wx.ID_ANY, '&Track', 'Repeat just the currently playlist track.')
   frame.repeat_all = repeat_menu.AppendRadioItem(wx.ID_ANY, '&All', 'Repeat all.')
-  [frame.repeat_off, frame.repeat_track, frame.repeat_all][int(config.system['repeat'])].Check(True)
+  [frame.repeat_off, frame.repeat_track, frame.repeat_all][config.system['repeat']].Check(True)
   self.AppendSubMenu(repeat_menu, '&Repeat', 'Repeat options')
   add_accelerator(frame, 'CTRL+R', frame.cycle_repeat)
   frame.shuffle = self.AppendCheckItem(wx.ID_ANY, '&Shuffle\tCTRL+H', 'Shuffle the current view.')

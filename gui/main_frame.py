@@ -265,24 +265,31 @@ class MainFrame(wx.Frame):
  
  def on_close(self, event):
   """Close the window."""
+  logger.info('Preparing to close...')
   self.position_timer.Stop()
+  logger.info('Stopped the main timer.')
   if application.stream:
    application.stream.stop()
-  if application.old_stream:
-   application.old_stream.stop()
+   logger.info('Stopped the currently playing stream.')
+  else:
+   logger.info('No track to stop.')
+  logger.info('Updating configuration...')
   config.system['stop_after'] = self.stop_after.IsChecked()
   config.system['shuffle'] = self.shuffle.IsChecked()
   config.system['offline_search'] = self.offline_search.IsChecked()
   config.system['volume'] = self.volume.GetValue()
   if self.repeat_track.IsChecked():
-   config.system['repeat'] = '1'
+   config.system['repeat'] = 1
   elif self.repeat_all.IsChecked():
-   config.system['repeat'] = '2'
+   config.system['repeat'] = 2
   else:
-   config.system['repeat'] = '0'
+   config.system['repeat'] = 0
+  logger.info('Running session.commit.')
   session.commit()
+  logger.info('Dumping configuration to disk.')
   save()
   event.Skip()
+  logger.info('Cleaning the media directory.')
   clean_library()
  
  def on_activate(self, event):

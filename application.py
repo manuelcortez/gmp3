@@ -19,6 +19,5 @@ api.android_id = '123456789abcde'
 frame = None # The main window.
 track = None # The current track.
 stream = None # The stream of the currently playing track.
-old_stream = None # The stream which is just finishing.
 
 library_size = 0 # The size of the library in bytes.

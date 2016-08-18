@@ -16,7 +16,7 @@ def create_config_dir():
 def save():
  """Dump configuration to disk."""
  create_config_dir()
- config.write()
+ config.write(indent = 1)
 
 create_config_dir()
 
@@ -87,7 +87,7 @@ class Config(Section):
   frequency = Option(44100, validator = Integer(min = min_frequency, max = max_frequency))
   pan = Option(50, validator = Integer(min = 0, max = 100))
   offline_search = Option(False, validator = Boolean)
-  repeat = Option(False, validator = Boolean)
+  repeat = Option(0, validator = Integer(min = 0, max = 2))
   output_device_index = Option(application.output.device, validator = Integer(min = -1))
   output_device_name = Option(application.output.get_device_names()[application.output.device])
 
