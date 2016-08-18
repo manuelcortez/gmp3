@@ -1,10 +1,12 @@
 """Configuration stuff."""
 
-import application, os, os.path, wx
+import application, os, os.path, wx, logging
 from wx.lib.filebrowsebutton import DirBrowseButton
 from simpleconf import Section, Option
 from simpleconf.validators import Integer, Boolean, Float, Option as OptionValidator
 from gui.widgets import StringChoice
+
+logger = logging.getLogger(__name__)
 
 config_dir = application.paths.GetUserLocalDataDir()
 
@@ -90,6 +92,15 @@ class Config(Section):
   repeat = Option(0, validator = Integer(min = 0, max = 2))
   output_device_index = Option(application.output.device, validator = Integer(min = -1))
   output_device_name = Option(application.output.get_device_names()[application.output.device])
+ 
+ def load(self):
+  """Load configuration from disk."""
+  try:
+   super(Config, self).load()
+   logger.info('Loaded the configuration from %s.', self.filename)
+  except Exception as e:
+   logger.warning('Failed to load the configuration from %s, error follows.', self.filename)
+   logger.exception(e)
 
 config = Config()
 
