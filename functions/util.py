@@ -2,11 +2,10 @@
 
 import application, wx, os, os.path, logging
 from db import session, Track, Playlist, Station, PlaylistEntry, to_object
-from config import interface_config, storage_config
 from gui.login_frame import LoginFrame
+from config import config
 from gmusicapi.exceptions import AlreadyLoggedIn
 from sqlalchemy.orm.exc import NoResultFound
-from config import login_config
 from gmusicapi.exceptions import NotLoggedIn
 
 logger = logging.getLogger(__name__)
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 def do_login(callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
  """Try to log in, then call callback."""
  try:
-  if not application.api.login(login_config['uid'], login_config['pwd'], application.api.FROM_MAC_ADDRESS):
+  if not application.api.login(config.login['uid'], config.login['pwd'], application.api.FROM_MAC_ADDRESS):
    return LoginFrame(callback = callback, args = args, kwargs = kwargs).Show(True)
  except AlreadyLoggedIn:
   pass
@@ -68,7 +67,7 @@ def delete_playlist(playlist):
 
 def format_track(track):
  """Return track printed as the user likes."""
- return interface_config['track_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})
+ return config.interface['track_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})
 
 def load_station(station):
  """Return a Station object from a dictionary."""
@@ -84,7 +83,7 @@ def load_station(station):
 
 def clean_library():
  """Remove unwanted files and directories from the media directory."""
- dir = storage_config['media_dir']
+ dir = config.storage['media_dir']
  for thing in os.listdir(dir):
   path = os.path.join(dir, thing)
   if os.path.isdir(path):
@@ -96,7 +95,7 @@ def clean_library():
 
 def prune_library():
  """Delete the least recently downloaded tracks in the catalogue."""
- goal = application.library_size - storage_config['max_size'] * (1024 ** 2)
+ goal = application.library_size - config.storage['max_size'] * (1024 ** 2)
  if goal > 0:
   logger.info('Pruning %.2f mb of data...', goal / (1024 ** 2))
   for r in session.query(Track).filter(Track.last_played != None).order_by(Track.last_played.asc()).all():

@@ -1,13 +1,12 @@
 """Database specifics."""
 
-import os.path, application
-from config import db_config, storage_config, interface_config
+import os.path, application, config
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
 from datetime import timedelta
 
-engine = create_engine('%s.%s' % (db_config['url'], application.__version__), echo = db_config['echo'])
+engine = create_engine('%s.%s' % (config.config.db['url'], application.__version__), echo = config.config.db['echo'])
 Base = declarative_base(bind = engine)
 Session = sessionmaker(bind = engine)
 session = Session()
@@ -79,7 +78,7 @@ class Track(Base):
  @property
  def path(self):
   """Return an appropriate path for this result."""
-  return os.path.join(storage_config['media_dir'], self.id + '.mp3')
+  return os.path.join(config.config.storage['media_dir'], self.id + '.mp3')
  
  @property
  def downloaded(self):
@@ -141,7 +140,7 @@ def list_to_objects(l):
  for item in l:
   yield to_object(item)
 
-interface_config.names['track_format'] = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])
+config.config.interface.track_format.title = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])
 
 class Playlist(Base):
  __tablename__ = 'playlists'

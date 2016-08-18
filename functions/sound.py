@@ -8,8 +8,8 @@ from random import choice
 from time import time, sleep
 from .util import do_login
 from .network import download_track
-from config import storage_config, system_config, sound_config
 from showing import SHOWING_QUEUE
+from config import config
 from sound_lib.stream import FileStream, URLStream
 from gmusicapi.exceptions import NotLoggedIn
 
@@ -26,7 +26,7 @@ def play(track, immediately_play = True):
    try:
     url = application.api.get_stream_url(track.id)
     stream = URLStream(url.encode())
-    if storage_config['download']:
+    if config.storage['download']:
      Thread(target = download_track, args = [url, track.path]).start()
    except NotLoggedIn:
     return do_login(callback = play, args = [track])
@@ -37,8 +37,8 @@ def play(track, immediately_play = True):
    Thread(target = fadeout, args = [application.stream]).start()
   if immediately_play:
    stream.play(True)
-  set_pan(system_config['pan'])
-  set_frequency(system_config['frequency'])
+  set_pan(config.system['pan'])
+  set_frequency(config.system['frequency'])
  else:
   track = None
   stream = None
@@ -90,21 +90,21 @@ def get_previous():
 
 def set_volume(value):
  """Set volume to value."""
- actual_value = ((pow(sound_config['volume_base'], value / 100) - 1) / (sound_config['volume_base'] - 1)) * 100
- system_config['volume'] = value
+ actual_value = ((pow(config.sound['volume_base'], value / 100) - 1) / (config.sound['volume_base'] - 1)) * 100
+ config.system['volume'] = value
  application.output.set_volume(actual_value)
  application.frame.volume.SetValue(value)
  logger.info('Set volume to %.2f (%s%%).', actual_value, value)
 
 def set_pan(value):
  """Set pan to value."""
- system_config['pan'] = value
+ config.system['pan'] = value
  if application.stream:
   application.stream.set_pan(value * 2 / 100 - 1.0)
 
 def set_frequency(value):
  """Set frequency to value."""
- system_config['frequency'] = value
+ config.system['frequency'] = value
  if application.stream:
   application.stream.set_frequency(value)
 
@@ -142,15 +142,15 @@ def set_output_device(name):
   s = play(application.track, immediately_play = to_play)
   if s is not None:
    s.set_position(pos)
-  system_config['output_device_index'] = device
-  system_config['output_device_name'] = name
+  config.system['output_device_index'] = device
+  config.system['output_device_name'] = name
 
 def fadeout(stream):
  """Fade out and stop a stream."""
  started = time()
  logger.info('Fading out stream %s.', stream)
  while stream.volume > 0.0:
-  v = max(0.0, stream.volume - sound_config['fadeout_amount'])
+  v = max(0.0, stream.volume - config.sound['fadeout_amount'])
   logger.info('Setting stream volume to %.2f.', v)
   stream.volume = v
   sleep(0.2)

@@ -1,11 +1,9 @@
 #pip install -U --trusted-host wxpython.org --pre -f http://wxpython.org/Phoenix/snapshot-builds/ wxPython_Phoenix
-#pypiwin32
 hg+http://hg.q-continuum.net/platform_utils#egg=platform_utils
-hg+https://hg.q-continuum.net/libloader#egg=libloader
+hg+http://hg.q-continuum.net/libloader#egg=libloader
 hg+http://hg.q-continuum.net/sound_lib
 git+https://github.com/chrisnorman7/wxgoodies.git#egg=wxgoodies
-configobj
-git+https://github.com/chrisnorman7/configobj-dialog.git#egg=configobj_dialog
+git+https://github.com/chrisnorman7/simpleconf.git#egg=simpleconf
 sqlalchemy
 gmusicapi
 requests

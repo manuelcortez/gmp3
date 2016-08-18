@@ -3,7 +3,7 @@
 import application, wx
 from time import ctime
 from .base import BaseMenu
-from config import system_config
+from config import config
 from ..create_playlist import CreatePlaylist
 from ..genre_station import GenreStation
 from functions.google import create_station, artist_action
@@ -25,7 +25,7 @@ class FileMenu(BaseMenu):
   self.AppendSubMenu(stations_menu, 'Create &Station...', 'Create a radio station from a number of sources.')
   self.AppendSeparator()
   frame.offline_search = self.AppendCheckItem(wx.ID_ANY, '&Offline Search', 'Search the local database rather than google')
-  frame.offline_search.Check(system_config['offline_search'])
+  frame.offline_search.Check(config.system['offline_search'])
   self.AppendSeparator()
   frame.Bind(wx.EVT_MENU, lambda event: application.frame.Close(True), self.Append(wx.ID_EXIT, '&Quit', 'Exit the program.'))
  

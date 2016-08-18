@@ -3,7 +3,7 @@
 from wx.lib.sized_controls import SizedFrame
 from wx.lib.intctrl import IntCtrl, EVT_INT
 from wxgoodies.keys import add_accelerator
-from config import system_config, min_frequency, max_frequency
+from config import config, min_frequency, max_frequency
 from functions.sound import set_output_device, set_volume, set_pan, set_frequency
 import application, wx
 
@@ -12,13 +12,13 @@ class AudioOptions(SizedFrame):
   super(AudioOptions, self).__init__(application.frame, title = 'Audio Options')
   p = self.GetContentsPane()
   add_accelerator(self, 'ESCAPE', lambda event: self.Close(True))
-  self.default_volume = system_config['volume']
-  self.default_frequency = system_config['frequency']
-  self.default_pan = system_config['pan']
+  self.default_volume = config.system['volume']
+  self.default_frequency = config.system['frequency']
+  self.default_pan = config.system['pan']
   p.SetSizerType('form')
   wx.StaticText(p, label = '&Output Device')
   self.device = wx.Choice(p, choices = sorted(application.output.get_device_names()))
-  self.device.SetStringSelection(system_config['output_device_name'])
+  self.device.SetStringSelection(config.system['output_device_name'])
   self.device.Bind(wx.EVT_CHOICE, lambda event: set_output_device(self.device.GetStringSelection()))
   wx.StaticText(p, label = '&Volume')
   self.volume = wx.Slider(p, style = wx.VERTICAL)

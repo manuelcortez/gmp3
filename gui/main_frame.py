@@ -5,7 +5,7 @@ from threading import Thread
 from six import string_types
 from wxgoodies.keys import add_accelerator
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
-from config import save, system_config, interface_config, sound_config
+from config import save, config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
@@ -71,7 +71,7 @@ class MainFrame(wx.Frame):
   ])
   s3 = wx.BoxSizer(wx.HORIZONTAL)
   s3.Add(wx.StaticText(p, label = '&Volume'), 0, wx.GROW)
-  self.volume = wx.Slider(p, value = system_config['volume'], style = wx.SL_VERTICAL)
+  self.volume = wx.Slider(p, value = config.system['volume'], style = wx.SL_VERTICAL)
   self.volume.Bind(wx.EVT_SLIDER, lambda event: set_volume(self.volume.GetValue()))
   s3.Add(self.volume, 1, wx.GROW)
   s3.Add(wx.StaticText(p, label = '&Position'), 0, wx.GROW)
@@ -135,7 +135,7 @@ class MainFrame(wx.Frame):
  
  def on_show(self, event):
   """Show the window."""
-  set_volume(system_config['volume'])
+  set_volume(config.system['volume'])
  
  def SetTitle(self):
   """Set the title to something."""
@@ -211,7 +211,7 @@ class MainFrame(wx.Frame):
   loaded = len(self.results)
   total = len(self.results) + len(self.autoload)
   percentage = '%.2f' % (100 / total * loaded)
-  self.status.SetStatusText(interface_config['status_format'].format(text, loaded, total, percentage))
+  self.status.SetStatusText(config.interface['status_format'].format(text, loaded, total, percentage))
  
  def load_library(self):
   """Load all the songs from the Google Music library."""
@@ -234,7 +234,7 @@ class MainFrame(wx.Frame):
   def f(what):
    """Get the results and pass them onto f2."""
    try:
-    results = [x['track'] for x in application.api.search(what, max_results = interface_config['results'])['song_hits']]
+    results = [x['track'] for x in application.api.search(what, max_results = config.interface['results'])['song_hits']]
     def f2(results):
      """Clear the search box and change it's label back to search_label."""
      if results:
@@ -270,16 +270,16 @@ class MainFrame(wx.Frame):
    application.stream.stop()
   if application.old_stream:
    application.old_stream.stop()
-  system_config['stop_after'] = self.stop_after.IsChecked()
-  system_config['shuffle'] = self.shuffle.IsChecked()
-  system_config['offline_search'] = self.offline_search.IsChecked()
-  system_config['volume'] = self.volume.GetValue()
+  config.system['stop_after'] = self.stop_after.IsChecked()
+  config.system['shuffle'] = self.shuffle.IsChecked()
+  config.system['offline_search'] = self.offline_search.IsChecked()
+  config.system['volume'] = self.volume.GetValue()
   if self.repeat_track.IsChecked():
-   system_config['repeat'] = '1'
+   config.system['repeat'] = '1'
   elif self.repeat_all.IsChecked():
-   system_config['repeat'] = '2'
+   config.system['repeat'] = '2'
   else:
-   system_config['repeat'] = '0'
+   config.system['repeat'] = '0'
   session.commit()
   save()
   event.Skip()
@@ -292,7 +292,7 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    play(res)
-   if interface_config['clear_queue']:
+   if config.interface['clear_queue']:
     self.queue = []
  
  def update_labels(self):
@@ -325,7 +325,7 @@ class MainFrame(wx.Frame):
    if not self.position.HasFocus():
     self.position.SetValue(int(pos * (100 / length)))
    stop_after = self.stop_after.IsChecked()
-   if (length - pos) <= (0 if stop_after else sound_config['fadeout_threshold']):
+   if (length - pos) <= (0 if stop_after else config.sound['fadeout_threshold']):
     if stop_after:
      n = None
     else:
