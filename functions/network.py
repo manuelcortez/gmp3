@@ -2,6 +2,7 @@
 
 import application, wx, os, os.path
 from requests import get
+from PyLyrics import PyLyrics
 from .util import prune_library
 
 def download_track(url, path):
@@ -13,3 +14,7 @@ def download_track(url, path):
  with open(path, 'wb') as f:
   application.library_size += f.write(response.content)
  wx.CallAfter(prune_library) # Delete old tracks if necessry.
+
+def get_lyrics(track):
+ """Get the lyrics of the provided track."""
+ return PyLyrics.getLyrics(track.artist, track.title)

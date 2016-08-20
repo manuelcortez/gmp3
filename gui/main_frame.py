@@ -9,6 +9,7 @@ from config import save, config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
+from functions.network import get_lyrics
 from functions.util import do_login, format_track, load_playlist, load_station, clean_library
 from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
@@ -63,7 +64,7 @@ class MainFrame(wx.Frame):
   vs.Add(self.view, 1, wx.GROW)
   ls = wx.BoxSizer(wx.VERTICAL)
   ls.Add(wx.StaticText(p, label = '&Lyrics'), 0, wx.GROW)
-  self.lyrics = wx.TextCtrl(p, style = wx.TE_MULTILINE | wx.TE_READONLY)
+  self.lyrics = wx.TextCtrl(p, value = 'Play a song to view lyrics.', style = wx.TE_MULTILINE | wx.TE_READONLY)
   ls.Add(self.lyrics, 1, wx.GROW)
   s2.AddMany([
    (vs, 1, wx.GROW),
@@ -544,3 +545,27 @@ class MainFrame(wx.Frame):
   else:
    self.add_results([res], showing = 'Currently Playing Track')
   self.view.SetFocus()
+ 
+ def update_lyrics(self, track):
+  """Update the lyrics view."""
+  def f(track, lyrics):
+   """Do the actual updating."""
+   if lyrics is not None:
+    track.lyrics = lyrics
+    session.add(track)
+    session.commit()
+   if track.lyrics:
+    value = '{artist} - {title}\n\n{lyrics}'.format(artist = track.artist, title = track.title, lyrics = track.lyrics)
+   else:
+    if config.storage['lyrics']:
+     value = 'No lyrics found for {artist} - {title}.'.format(artist = track.artist, title = track.title)
+    else:
+     value = ''
+   self.lyrics.SetValue(value)
+  lyrics = track.lyrics
+  if track.lyrics is None and config.storage['lyrics']:
+   try:
+    lyrics = get_lyrics(track)
+   except ValueError:
+    pass # No lyrics found.
+  wx.CallAfter(f, track, lyrics)

@@ -42,6 +42,8 @@ def play(track, immediately_play = True):
  else:
   track = None
   stream = None
+ if application.track is not track:
+  Thread(target = application.frame.update_lyrics, args = [track]).start()
  application.track = track
  application.stream = stream
  application.frame.SetTitle()
