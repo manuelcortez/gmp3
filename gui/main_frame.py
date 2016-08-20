@@ -9,10 +9,12 @@ from config import save, config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
+from lyricscraper.lyrics import Lyrics
 from functions.network import get_lyrics
 from functions.util import do_login, format_track, load_playlist, load_station, clean_library
 from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
+from lyrics import LocalEngine
 from .menus.context import ContextMenu
 from .menus.main import MainMenu
 from .edit_playlist_frame import EditPlaylistFrame
@@ -551,21 +553,25 @@ class MainFrame(wx.Frame):
   def f(track, lyrics):
    """Do the actual updating."""
    if lyrics is not None:
-    track.lyrics = lyrics
+    logger.info('Found lyrics using the %s engine.', lyrics.engine.name)
+    track.lyrics = lyrics.lyrics
     session.add(track)
     session.commit()
-   if track.lyrics:
-    value = '{artist} - {title}\n\n{lyrics}'.format(artist = track.artist, title = track.title, lyrics = track.lyrics)
+    value = '{0.artist} - {0.title} ({0.engine.name})\n\n{0.lyrics}'.format(lyrics)
    else:
     if config.storage['lyrics']:
      value = 'No lyrics found for {artist} - {title}.'.format(artist = track.artist, title = track.title)
     else:
      value = ''
    self.lyrics.SetValue(value)
-  lyrics = track.lyrics
-  if track.lyrics is None and config.storage['lyrics']:
-   try:
-    lyrics = get_lyrics(track)
-   except ValueError:
-    pass # No lyrics found.
+  if track.lyrics is None:
+   if config.storage['lyrics']:
+    try:
+     lyrics = get_lyrics(track)
+    except ValueError:
+     lyrics = None # No lyrics found.
+   else:
+    lyrics = None
+  else:
+   lyrics = Lyrics(track.artist, track.title, track.lyrics, LocalEngine())
   wx.CallAfter(f, track, lyrics)

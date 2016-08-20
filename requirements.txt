@@ -8,5 +8,5 @@ sqlalchemy
 gmusicapi
 requests
 git+https://github.com/chrisnorman7/default_argparse.git#egg=default_argparse
+git+https://github.com/chrisnorman7/lyricscraper.git#egg=lyricscraper
 six
-pylyrics
