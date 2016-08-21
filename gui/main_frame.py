@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
 from lyricscraper.lyrics import Lyrics
 from functions.network import get_lyrics
-from functions.util import do_login, format_track, load_playlist, load_station, clean_library
+from functions.util import do_login, format_track, format_timedelta, load_playlist, load_station, clean_library
 from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from lyrics import LocalEngine
@@ -224,7 +224,7 @@ class MainFrame(wx.Frame):
     loaded = loaded,
     total = total,
     percentage = percentage,
-    duration = duration
+    duration = format_timedelta(duration)
    )
   )
  

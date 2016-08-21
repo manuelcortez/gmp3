@@ -57,7 +57,7 @@ class Config(Section):
   """Interface configuration."""
   title = 'Interface'
   clear_queue = Option(True, title = 'Clear The &Queue When Enter Is Pressed', validator = Boolean)
-  track_format = Option('{artist} - {album} - {number} - {title} ({duration})', title = '&Track Format')
+  track_format = Option('{artist} - {album} - {number} - {title} ({length})', title = '&Track Format')
   status_bar_format = Option('{text} ({loaded} / {total} loaded {percentage}%) [{duration}]', title = '&Status Bar Format')
   results = Option(25, title = '&Results To Download', validator = Integer(min = 1, max = 100))
   option_order = [clear_queue, track_format, status_bar_format, results]

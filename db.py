@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
 from datetime import timedelta
+from functions.util import format_timedelta
 
 engine = create_engine('%s.%s' % (config.config.db['url'], application.__version__), echo = config.config.db['echo'])
 Base = declarative_base(bind = engine)
@@ -74,6 +75,11 @@ class Track(Base):
  def in_library(self):
   """Return True if this track is in the google library."""
   return not self.id.startswith('T')
+ 
+ @property
+ def length(self):
+  """Return the duration in the proper format."""
+  return format_timedelta(self.duration)
  
  @property
  def path(self):

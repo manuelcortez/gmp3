@@ -1,7 +1,6 @@
 """Utility functions."""
 
-import application, wx, os, os.path, logging
-from db import session, Track, Playlist, Station, PlaylistEntry, to_object
+import application, wx, os, os.path, logging, db
 from gui.login_frame import LoginFrame
 from config import config
 from gmusicapi.exceptions import AlreadyLoggedIn
@@ -29,21 +28,21 @@ def do_login(callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
 def load_playlist(playlist):
  """Load a playlist into the database."""
  try:
-  p = session.query(Playlist).filter(Playlist.id == playlist['id']).one()
+  p = db.session.query(db.Playlist).filter(db.Playlist.id == playlist['id']).one()
  except NoResultFound:
-  p = Playlist()
+  p = db.Playlist()
   p.id = playlist['id']
- session.add(p)
+ db.session.add(p)
  p.name = playlist.get('name', 'Untitled Playlist')
  p.description = playlist.get('description', '')
  p.tracks = []
  for t in playlist.get('tracks', []):
   if 'track' in t:
-   track = to_object(t['track'])
+   track = db.to_object(t['track'])
    p.tracks.append(track)
    i = t['id']
    try:
-    e = session.query(PlaylistEntry).filter(PlaylistEntry.id == i, PlaylistEntry.track == track, PlaylistEntry.playlist == p).one()
+    e = db.session.query(PlaylistEntry).filter(PlaylistEntry.id == i, PlaylistEntry.track == track, PlaylistEntry.playlist == p).one()
    except NoResultFound:
     e = PlaylistEntry(playlist = p, track = track, id = t['id'])
    session.add(e)
@@ -119,3 +118,36 @@ def prune_library():
    logger.info('Failed. %s b (%.2f mb) left.', goal, goal / (1024 ** 2))
  else:
   logger.info('No need for prune. %.2f mb left.', (goal * -1) / (1024 ** 2))
+
+def format_timedelta(td):
+ """Format timedelta td."""
+ fmt = [] # The format as a list.
+ seconds = td.total_seconds()
+ years, seconds = divmod(seconds, 31536000)
+ if years:
+  fmt.append('%d %s' % (years, 'year' if years == 1 else 'years'))
+ months, seconds = divmod(seconds, 2592000)
+ if months:
+  fmt.append('%d %s' % (months, 'month' if months == 1 else 'months'))
+ days, seconds = divmod(seconds, 86400)
+ if days:
+  fmt.append('%d %s' % (days, 'day' if days == 1 else 'days'))
+ hours, seconds = divmod(seconds, 3600)
+ if hours:
+  fmt.append('%d %s' % (hours, 'hour' if hours == 1 else 'hours'))
+ minutes, seconds = divmod(seconds, 60)
+ if minutes:
+  fmt.append('%d %s' % (minutes, 'minute' if minutes == 1 else 'minutes'))
+ if seconds:
+  fmt.append('%.2f seconds' % seconds)
+ if len(fmt) == 1:
+  return fmt[0]
+ else:
+  res = ''
+  for pos, item in enumerate(fmt):
+   if pos == len(fmt) - 1:
+    res += ', and '
+   elif res:
+    res += ', '
+   res += item
+  return res
