@@ -4,6 +4,7 @@ import wx, application, showing, logging
 from threading import Thread
 from six import string_types
 from wxgoodies.keys import add_accelerator
+from datetime import timedelta
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
 from config import save, config
 from sqlalchemy import func, or_
@@ -214,7 +215,10 @@ class MainFrame(wx.Frame):
   loaded = len(self.results)
   total = len(self.results) + len(self.autoload)
   percentage = '%.2f' % (100 / total * loaded)
-  self.status.SetStatusText(config.interface['status_format'].format(text, loaded, total, percentage))
+  duration = timedelta()
+  for r in self.results:
+   duration += r.duration
+  self.status.SetStatusText(config.interface['status_bar_format'].format(text = text, loaded = loaded, total = total, percentage = percentage, duration = duration))
  
  def load_library(self):
   """Load all the songs from the Google Music library."""
