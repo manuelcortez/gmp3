@@ -218,7 +218,15 @@ class MainFrame(wx.Frame):
   duration = timedelta()
   for r in self.results:
    duration += r.duration
-  self.status.SetStatusText(config.interface['status_bar_format'].format(text = text, loaded = loaded, total = total, percentage = percentage, duration = duration))
+  self.status.SetStatusText(
+   config.interface['status_bar_format'].format(
+    text = text,
+    loaded = loaded,
+    total = total,
+    percentage = percentage,
+    duration = duration
+   )
+  )
  
  def load_library(self):
   """Load all the songs from the Google Music library."""
