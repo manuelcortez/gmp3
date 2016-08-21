@@ -25,6 +25,8 @@ def play(track, immediately_play = True):
   elif not track.downloaded:
    try:
     url = application.api.get_stream_url(track.id)
+    if track.artists[0].bio is None:
+     track.artists[0].populate(application.api.get_artist_info(track.artists[0].id))
     stream = URLStream(url.encode())
     if config.storage['download']:
      Thread(target = download_track, args = [url, track.path]).start()

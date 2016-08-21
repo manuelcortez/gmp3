@@ -69,6 +69,9 @@ class MainFrame(wx.Frame):
   ls.Add(wx.StaticText(p, label = '&Lyrics'), 0, wx.GROW)
   self.lyrics = wx.TextCtrl(p, value = 'Play a song to view lyrics.', style = wx.TE_MULTILINE | wx.TE_READONLY)
   ls.Add(self.lyrics, 1, wx.GROW)
+  ls.Add(wx.StaticText(p, label = 'Artist &Biography'), 0, wx.GROW)
+  self.artist_bio = wx.TextCtrl(p, style = wx.TE_MULTILINE | wx.TE_READONLY)
+  ls.Add(self.artist_bio, 0, wx.GROW)
   s2.AddMany([
    (vs, 1, wx.GROW),
    (ls, 1, wx.GROW),
@@ -576,6 +579,8 @@ class MainFrame(wx.Frame):
     else:
      value = ''
    self.lyrics.SetValue(value)
+   if track.artists[0].bio is not None:
+    self.artist_bio.SetValue(track.artists[0].bio.strip())
   if track.lyrics is None:
    if config.storage['lyrics']:
     try:

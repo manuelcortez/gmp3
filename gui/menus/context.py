@@ -52,6 +52,7 @@ class ContextMenu(wx.Menu):
   self.Bind(wx.EVT_MENU, lambda event: os.remove(track.path) if track.downloaded else self.download(), self.Append(wx.ID_ANY, 'Remove &Download' if track.downloaded else '&Download', 'Manage the downloaded state of this track.'))
   self.Bind(wx.EVT_MENU, self.save_track, self.Append(wx.ID_ANY, '&Save Track...', 'Save the track to disk.'))
   self.Bind(wx.EVT_MENU, self.reload, self.Append(wx.ID_ANY, '&Reindex', 'Reindex the track from Google.'))
+  self.Bind(wx.EVT_MENU, self.update_artists, self.Append(wx.ID_ANY, '&Update %s' % ('artist' if len(track.artists) == 1 else 'artists'), 'Update the stored artist information for this track.'))
  
  def download(self, track = None):
   """Download was clicked."""
@@ -97,3 +98,11 @@ class ContextMenu(wx.Menu):
    remove_from_library(self.track)
   else:
    add_to_library(self.track)
+ 
+ def update_artists(self, event):
+  """Re-download the biographies for artists on this track."""
+  for a in self.track.artists:
+   try:
+    a.populate(application.api.get_artist_info(a.id))
+   except NotLoggedIn:
+    do_login(callback = self.update_artists, args = [event])
