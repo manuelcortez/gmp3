@@ -146,7 +146,7 @@ def list_to_objects(l):
  for item in l:
   yield to_object(item)
 
-config.config.interface.track_format.title = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])
+config.config.interface.result_format.title = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])
 
 class Playlist(Base):
  __tablename__ = 'playlists'

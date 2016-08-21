@@ -3,9 +3,8 @@
 import application, wx, os, os.path, logging, db
 from gui.login_frame import LoginFrame
 from config import config
-from gmusicapi.exceptions import AlreadyLoggedIn
 from sqlalchemy.orm.exc import NoResultFound
-from gmusicapi.exceptions import NotLoggedIn
+from gmusicapi.exceptions import NotLoggedIn, AlreadyLoggedIn
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +41,11 @@ def load_playlist(playlist):
    p.tracks.append(track)
    i = t['id']
    try:
-    e = db.session.query(PlaylistEntry).filter(PlaylistEntry.id == i, PlaylistEntry.track == track, PlaylistEntry.playlist == p).one()
+    e = db.session.query(db.PlaylistEntry).filter(db.PlaylistEntry.id == i, db.PlaylistEntry.track == track, db.PlaylistEntry.playlist == p).one()
    except NoResultFound:
-    e = PlaylistEntry(playlist = p, track = track, id = t['id'])
-   session.add(e)
- session.commit()
+    e = db.PlaylistEntry(playlist = p, track = track, id = t['id'])
+   db.session.add(e)
+ db.session.commit()
  application.frame.add_playlist(p)
  return p
 
@@ -58,12 +57,12 @@ def delete_playlist(playlist):
  try:
   if application.api.delete_playlist(playlist.id) == playlist.id:
    for e in playlist.entries:
-    session.delete(e)
-   session.delete(playlist)
+    db.session.delete(e)
+   db.session.delete(playlist)
    if playlist in application.frame.playlists:
     application.frame.playlists_menu.Delete(application.frame.playlists[playlist])
     del application.frame.playlists[playlist]
-   session.commit()
+   db.session.commit()
    return True
   else:
    return False
@@ -73,16 +72,15 @@ def delete_playlist(playlist):
 
 def format_track(track):
  """Return track printed as the user likes."""
- return config.interface['track_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})
+ return config.interface['result_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})
 
 def load_station(station):
  """Return a Station object from a dictionary."""
  try:
-  s = session.query(Station).filter(Station.id == station['id']).one()
+  s = db.session.query(db.Station).filter(db.Station.id == station['id']).one()
  except NoResultFound:
-  s = Station()
-  s.id = station['id']
- session.add(s)
+  s = db.Station(id = station['id'])
+ db.session.add(s)
  s.name = station.get('name', 'Untitled Radio Station')
  application.frame.add_station(s)
  return s
@@ -96,7 +94,7 @@ def clean_library():
    os.removedirs(path)
   else:
    id, ext = os.path.splitext(thing)
-   if not session.query(Track).filter(Track.id == id).count():
+   if not db.session.query(db.Track).filter(db.Track.id == id).count():
     os.remove(path)
 
 def prune_library():
@@ -104,7 +102,7 @@ def prune_library():
  goal = application.library_size - config.storage['max_size'] * (1024 ** 2)
  if goal > 0:
   logger.info('Pruning %.2f mb of data...', goal / (1024 ** 2))
-  for r in session.query(Track).filter(Track.last_played != None).order_by(Track.last_played.asc()).all():
+  for r in db.session.query(db.Track).filter(db.Track.last_played != None).order_by(db.Track.last_played.asc()).all():
    if r.downloaded:
     size = os.path.getsize(r.path)
     logger.info('Deleting %s (%.2f mb).', r, size / (1024 ** 2))
@@ -115,7 +113,7 @@ def prune_library():
      logger.info('Done.')
      break
   else:
-   logger.info('Failed. %s b (%.2f mb) left.', goal, goal / (1024 ** 2))
+   logger.warning('Failed. %d b (%.2f mb) left.', goal, goal / (1024 ** 2))
  else:
   logger.info('No need for prune. %.2f mb left.', (goal * -1) / (1024 ** 2))
 
