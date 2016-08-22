@@ -64,6 +64,7 @@ class MainFrame(wx.Frame):
   add_accelerator(self.view, 'SPACE', self.play_pause)
   self.view.SetFocus()
   self.view.Bind(wx.EVT_CONTEXT_MENU, self.on_context)
+  add_accelerator(self.view, 'SHIFT+F10', self.on_context)
   vs.Add(self.view, 1, wx.GROW)
   ls = wx.BoxSizer(wx.VERTICAL)
   ls.Add(wx.StaticText(p, label = '&Lyrics'), 0, wx.GROW)
