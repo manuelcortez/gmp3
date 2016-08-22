@@ -581,6 +581,8 @@ class MainFrame(wx.Frame):
    self.lyrics.SetValue(value)
    if track.artists[0].bio is not None:
     self.artist_bio.SetValue(track.artists[0].bio.strip())
+   else:
+    self.artist_bio.Clear()
   if track.lyrics is None:
    if config.storage['lyrics']:
     try:
