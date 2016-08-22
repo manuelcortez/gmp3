@@ -420,6 +420,8 @@ class MainFrame(wx.Frame):
    stations = []
    for d in data:
     stations.append(load_station(d))
+   if not session.query(Station).filter(Station.id == 'IFL').count():
+    stations.append(load_station(dict(name = 'I\'m Feeling Lucky', id = 'IFL')))
    dlg = wx.SingleChoiceDialog(self, 'Select a station to listen to', 'Radio Stations', [x.name for x in stations])
    if dlg.ShowModal() == wx.ID_OK:
     Thread(target = self.load_station, args = [stations[dlg.GetSelection()]]).start()
