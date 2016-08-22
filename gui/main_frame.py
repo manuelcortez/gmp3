@@ -283,7 +283,8 @@ class MainFrame(wx.Frame):
  
  def on_close(self, event):
   """Close the window."""
-  logger.info('Preparing to close...')
+  event.Skip()
+  logger.info('Main frame closed.')
   self.position_timer.Stop()
   logger.info('Stopped the main timer.')
   if application.stream:
@@ -306,7 +307,6 @@ class MainFrame(wx.Frame):
   session.commit()
   logger.info('Dumping configuration to disk.')
   save()
-  event.Skip()
   logger.info('Cleaning the media directory.')
   clean_library()
  
