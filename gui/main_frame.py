@@ -238,7 +238,7 @@ class MainFrame(wx.Frame):
    lib = application.api.get_all_songs()
    wx.CallAfter(self.add_results, lib, showing = showing.SHOWING_LIBRARY)
   except NotLoggedIn:
-   do_login(callback = self.load_library)
+   wx.CallAfter(do_login, callback = self.load_library)
  
  def load_promoted_songs(self):
   """Load promoted songs from Google."""
@@ -246,7 +246,7 @@ class MainFrame(wx.Frame):
    songs = application.api.get_promoted_songs()
    wx.CallAfter(self.load_results, songs, showing = showing.SHOWING_PROMOTED)
   except NotLoggedIn:
-   do_login(callback = self.load_promoted_songs)
+   wx.CallAfter(do_login, callback = self.load_promoted_songs)
  
  def do_remote_search(self, what):
   """Perform a searchon Google Play Music for what."""

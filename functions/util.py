@@ -18,7 +18,7 @@ def do_login(callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
  application.logging_in = True
  args = [callback, *args]
  try:
-  if not application.api.login(config.login['uid'], config.login['pwd'], application.api.FROM_MAC_ADDRESS):
+  if not config.login['uid'] or not config.login['pwd'] or not application.api.login(config.login['uid'], config.login['pwd'], application.api.FROM_MAC_ADDRESS):
    return LoginFrame(callback = f, args = args, kwargs = kwargs).Show(True)
  except AlreadyLoggedIn:
   pass
@@ -122,7 +122,7 @@ def prune_library():
 def format_timedelta(td):
  """Format timedelta td."""
  fmt = [] # The format as a list.
- seconds = td.total_seconds()
+ seconds = int(td.total_seconds())
  years, seconds = divmod(seconds, 31536000)
  if years:
   fmt.append('%d %s' % (years, 'year' if years == 1 else 'years'))
@@ -139,7 +139,7 @@ def format_timedelta(td):
  if minutes:
   fmt.append('%d %s' % (minutes, 'minute' if minutes == 1 else 'minutes'))
  if seconds:
-  fmt.append('%.2f seconds' % seconds)
+  fmt.append('%d %s' % (seconds, 'second' if seconds == 1 else 'seconds'))
  if len(fmt) == 1:
   return fmt[0]
  else:
