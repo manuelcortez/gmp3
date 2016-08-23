@@ -162,7 +162,10 @@ def album_action(artist, callback, *args, **kwargs):
   wx.CallAfter(f2, application.api.get_artist_info(artist.id).get('albums', []))
  def f2(albums):
   """Build the dialog to choose an album."""
-  dlg = wx.SingleChoiceDialog(None, 'Select an album', 'Album Selection', ['%s (%s)' % (a.get('name', 'Unknown Album %s' % a['year']), a['year']) for a in albums])
-  if dlg.ShowModal() == wx.ID_OK:
-   Thread(target = callback, args = [albums[dlg.GetSelection()]['albumId'], *args], kwargs = kwargs).start()
+  if not albums:
+   wx.CallAfter(do_error, 'There are no albums for this artist.')
+  else:
+   dlg = wx.SingleChoiceDialog(None, 'Select an album', 'Album Selection', ['%s (%s)' % (a.get('name', 'Unknown Album %s' % a['year']), a['year']) for a in albums])
+   if dlg.ShowModal() == wx.ID_OK:
+    Thread(target = callback, args = [albums[dlg.GetSelection()]['albumId'], *args], kwargs = kwargs).start()
  Thread(target = f1, args = [artist]).start()
