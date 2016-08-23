@@ -1,4 +1,4 @@
-"""Goele functions."""
+"""Google functions."""
 
 import application, wx, logging, six
 from .util import do_login, do_error, load_station
@@ -82,7 +82,7 @@ def load_artist_tracks(artist):
  try:
   a = application.api.get_artist_info(artist.id)
   artist.populate(a)
-  wx.CallAfter(application.frame.add_results, [], showing = artist.name)
+  wx.CallAfter(application.frame.add_results, [], showing = artist)
   for album in a.get('albums', []):
    album = application.api.get_album_info(album['albumId'])
    wx.CallAfter(application.frame.add_results, album.get('tracks', []), clear = False)

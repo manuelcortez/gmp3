@@ -16,7 +16,7 @@ def do_login(callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
  if application.logging_in:
   return # Don't try again.
  application.logging_in = True
- args.insert(0, callback)
+ args = [callback, *args]
  try:
   if not application.api.login(config.login['uid'], config.login['pwd'], application.api.FROM_MAC_ADDRESS):
    return LoginFrame(callback = f, args = args, kwargs = kwargs).Show(True)

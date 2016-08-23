@@ -12,8 +12,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
 from lyricscraper.lyrics import Lyrics
 from functions.network import get_lyrics
-from functions.util import do_login, format_track, format_timedelta, load_playlist, load_station, clean_library
-from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action
+from functions.util import do_login, do_error, format_track, format_timedelta, load_playlist, load_station, clean_library
+from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action, remove_from_playlist
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from lyrics import LocalEngine
 from .menus.context import ContextMenu
@@ -493,6 +493,8 @@ class MainFrame(wx.Frame):
     session.add(artist)
     results.append(artist)
    session.commit()
+   if not results:
+    return do_error('There are no related artists.')
    dlg = wx.SingleChoiceDialog(self, 'Select a related artist', 'Related Artists', [x.name for x in results])
    if dlg.ShowModal() == wx.ID_OK:
     res = results[dlg.GetSelection()]
@@ -597,3 +599,24 @@ class MainFrame(wx.Frame):
   else:
    lyrics = Lyrics(track.artist, track.title, track.lyrics, LocalEngine())
   wx.CallAfter(f, track, lyrics)
+ 
+ def do_delete(self, event):
+  """Delete the current result from the current view."""
+  res = self.get_result()
+  if not self.view.HasFocus():
+   event.Skip()
+  elif res is None:
+   return wx.Bell()
+  elif self.showing is showing.SHOWING_LIBRARY:
+   if wx.MessageBox('Are you sure you want to delete %s from your library?' % res, 'Are You Sure', style = wx.ICON_QUESTION | wx.YES_NO) == wx.YES:
+    remove_from_library(res)
+  elif isinstance(self.showing, Playlist):
+   for entry in res.playlist_entries:
+    if entry.playlist is self.showing:
+     if wx.MessageBox('Are you sure you want to remove %s from the %s playlist?' % (res, self.showing.name), 'Are You Sure', style = wx.ICON_QUESTION | wx.YES_NO) == wx.YES:
+      remove_from_playlist(entry)
+     break
+   else:
+    do_error('Cannot find %s in the %s playlist.' % (res, self.showing.name))
+  else:
+   do_error('No way to delete %s from the current view.' % res)
