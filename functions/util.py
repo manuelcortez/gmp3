@@ -92,9 +92,11 @@ def clean_library():
  for thing in os.listdir(dir):
   path = os.path.join(dir, thing)
   if os.path.isdir(path):
+   logger.info('Removing directory %s.', path)
    os.removedirs(path)
   else:
    if thing not in tracks:
+    logger.info('Removing file %s.', path)
     os.remove(path)
 
 def prune_library():
