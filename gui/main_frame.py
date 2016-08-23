@@ -384,34 +384,37 @@ class MainFrame(wx.Frame):
  
  def on_previous(self, event):
   """Play the previous track."""
-  t = get_previous()
-  if t:
-   play(t)
+  if self.view.HasFocus():
+   play(get_previous())
   else:
-   wx.Bell()
+   event.Skip()
  
  def on_next(self, event):
   """Play the next track."""
-  t = get_next(remove = True)
-  if t:
-   if application.stream:
-    play(t)
+  if self.view.HasFocus():
+   play(get_next(remove = True))
   else:
-   wx.Bell()
+   event.Skip()
  
  def rewind(self, event):
   """Rewind the current track."""
-  if application.stream:
-   seek(seek_amount * -1)
+  if self.view.HasFocus():
+   if application.stream:
+    seek(seek_amount * -1)
+   else:
+    wx.Bell()
   else:
-   wx.Bell()
+   event.Skip()
  
  def fastforward(self, event):
   """Fastforward the currently playing stream."""
-  if application.stream:
-   seek(seek_amount)
+  if self.view.HasFocus():
+   if application.stream:
+    seek(seek_amount)
+   else:
+    wx.Bell()
   else:
-   wx.Bell()
+   event.Skip()
  
  def load_remote_station(self, event):
   """Load a station from google."""
