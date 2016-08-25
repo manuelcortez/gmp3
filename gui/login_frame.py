@@ -6,10 +6,8 @@ from config import config
 from gmusicapi.exceptions import AlreadyLoggedIn
 
 class LoginFrame(SimpleConfWxDialog):
- def __init__(self, callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
+ def __init__(self, callback):
   self.callback = callback
-  self.args = args
-  self.kwargs = kwargs
   super(LoginFrame, self).__init__(config.login)
   self.Bind(wx.EVT_CLOSE, self.on_close)
  
@@ -38,4 +36,4 @@ class LoginFrame(SimpleConfWxDialog):
    if not res:
     self.on_error('Failed to login.')
    else:
-    self.callback(*self.args, **self.kwargs)
+    self.callback()

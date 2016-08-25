@@ -93,3 +93,4 @@ creds.ini
 *.sqlite3
 *.db
 x.py
+test.py

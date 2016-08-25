@@ -5,6 +5,7 @@ from gui.login_frame import LoginFrame
 from config import config
 from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn, AlreadyLoggedIn
+from functools import partial
 
 logger = logging.getLogger(__name__)
 
@@ -13,16 +14,16 @@ def do_login(callback = lambda *args, **kwargs: None, args = [], kwargs = {}):
  def f(callback, *args, **kwargs):
   application.logging_in = False # Free it up so more login attempts can be made if needed.
   return callback(*args, **kwargs)
+ cb = partial(f, callback, *args, **kwargs)
  if application.logging_in:
   return # Don't try again.
  application.logging_in = True
- args = [callback, *args]
  try:
   if not config.login['uid'] or not config.login['pwd'] or not application.api.login(config.login['uid'], config.login['pwd'], application.api.FROM_MAC_ADDRESS):
-   return LoginFrame(callback = f, args = args, kwargs = kwargs).Show(True)
+   return LoginFrame(cb).Show(True)
  except AlreadyLoggedIn:
   pass
- return f(*args, **kwargs)
+ return cb()
 
 def load_playlist(playlist):
  """Load a playlist into the database."""
