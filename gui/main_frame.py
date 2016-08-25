@@ -106,7 +106,7 @@ class MainFrame(wx.Frame):
   for p in playlists:
    self.add_playlist(p)
   self.stations = {} # The same as .playlists except for radio stations.
-  for s in session.query(Station).all():
+  for s in session.query(Station).order_by(Station.name.desc()).all():
    self.add_station(s)
   self.status = self.CreateStatusBar()
   self.status.SetStatusText('Nothing playing yet')
