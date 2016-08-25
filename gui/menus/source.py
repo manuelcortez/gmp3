@@ -25,4 +25,4 @@ class SourceMenu(BaseMenu):
   frame.delete_stations_menu = wx.Menu()
   frame.stations_menu.AppendSubMenu(frame.delete_stations_menu, '&Delete')
   self.AppendSubMenu(frame.stations_menu, '&Radio Stations', 'Locally stored and remote radio stations.')
-  frame.Bind(wx.EVT_MENU, lambda event: setattr(frame, 'autoload', [frame.autoload[0]] if frame.autoload else []), self.Append(wx.ID_ANY, 'Stop Loading &Results', 'Stop loading results to the track view.'))
+  frame.Bind(wx.EVT_MENU, lambda event: setattr(frame, 'autoload', [frame.autoload[0]] if frame.autoload else []), self.Append(wx.ID_ANY, 'St&op Loading Results', 'Stop loading results to the track view.'))
