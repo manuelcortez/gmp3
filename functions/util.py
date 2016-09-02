@@ -51,7 +51,7 @@ def load_playlist(playlist):
  return p
 
 def do_error(message, title = 'Error'):
- return wx.MessageBox(message, title, style = wx.ICON_EXCLAMATION)
+ wx.CallAfter(wx.MessageBox, str(message), title, style = wx.ICON_EXCLAMATION)
 
 def delete_playlist(playlist):
  """Delete a playlist."""

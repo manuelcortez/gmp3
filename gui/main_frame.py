@@ -64,7 +64,7 @@ class MainFrame(wx.Frame):
   add_accelerator(self.view, 'SPACE', self.play_pause)
   self.view.SetFocus()
   self.view.Bind(wx.EVT_CONTEXT_MENU, self.on_context)
-  if not sys.platform.startswith('win'):
+  if sys.platform == 'darwin':
    add_accelerator(self.view, 'SHIFT+F10', self.on_context)
   vs.Add(self.view, 1, wx.GROW)
   ls = wx.BoxSizer(wx.VERTICAL)
@@ -381,7 +381,6 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    self.PopupMenu(ContextMenu(res), wx.GetMousePosition())
-  event.Skip()
  
  def on_previous(self, event):
   """Play the previous track."""
@@ -592,7 +591,7 @@ class MainFrame(wx.Frame):
     self.artist_bio.SetValue(track.artists[0].bio.strip())
    else:
     self.artist_bio.Clear()
-  if track.lyrics is None:
+  if track is not None and track.lyrics is None:
    if config.storage['lyrics']:
     try:
      lyrics = get_lyrics(track)
@@ -601,7 +600,10 @@ class MainFrame(wx.Frame):
    else:
     lyrics = None
   else:
-   lyrics = Lyrics(track.artist, track.title, track.lyrics, LocalEngine())
+   if track is not None:
+    lyrics = Lyrics(track.artist, track.title, track.lyrics, LocalEngine())
+   else:
+    lyrics = None
   wx.CallAfter(f, track, lyrics)
  
  def do_delete(self, event):

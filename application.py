@@ -5,7 +5,7 @@ import wx
 name = 'GMP3'
 __version__ = '3.1'
 
-app = wx.App()
+app = wx.App(False)
 app.SetAppName(name)
 paths = wx.StandardPaths.Get()
 

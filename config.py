@@ -23,6 +23,7 @@ def save():
 create_config_dir()
 
 import db
+from pyglet_validator import PygletValidator
 
 min_frequency = 100
 max_frequency = 200000
@@ -43,7 +44,8 @@ class Config(Section):
   fadeout_threshold = Option(0, title = 'Remaining Samples Before &Fadeout', validator = Integer(min = 0))
   fadeout_amount = Option(1.0, title = 'Fadeout &Amount', validator = Float(max = 1.0, min = 0.00001))
   volume_base = Option(10.0, title = '&Volume Logarithm Base', validator = Float(min = 1.00001, max = 100.0))
-  option_order = [fadeout_threshold, fadeout_amount, volume_base]
+  pyglet = Option(False, title = 'Output Sound Using &Pyglet', validator = PygletValidator)
+  option_order = [fadeout_threshold, fadeout_amount, volume_base, pyglet]
  
  class login(Section):
   """Login configuration."""

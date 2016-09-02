@@ -6,7 +6,7 @@ from math import pow
 from datetime import datetime
 from random import choice
 from time import time, sleep
-from .util import do_login
+from .util import do_login, do_error
 from .network import download_track
 from showing import SHOWING_QUEUE
 from config import config
@@ -16,6 +16,62 @@ from gmusicapi.exceptions import NotLoggedIn
 logger = logging.getLogger(__name__)
 
 seek_amount = 100000
+
+class PygletFileStream(object):
+ """A stream that will play pyglet MP3's."""
+ def __init__(self, filename):
+  from pyglet.media import load, Player
+  self.player = Player()
+  self.player.queue(load(filename))
+  self.is_paused = False
+  self.is_stopped = False
+ 
+ def play(self, restart = False):
+  if restart:
+   self.player.position = 0.0
+  self.player.play()
+ 
+ def get_position(self):
+  return self.player.time
+ 
+ def set_position(self, value):
+  try:
+   self.player.seek(value)
+  except AttributeError:
+   pass # No source to seek.
+ 
+ def get_length(self):
+  try:
+   return self.player.source.duration
+  except AttributeError:
+   return 0.0 # No source.
+ 
+ def pause(self):
+  self.player.pause()
+  self.is_paused = True
+ 
+ def stop(self):
+  self.player.pause()
+  self.set_position(0.0)
+  self.is_stopped = True
+ 
+ def get_volume(self):
+  return self.player.volume
+ 
+ def set_volume(self, value):
+  self.player.volume = value
+ 
+ def get_frequency(self):
+  return 44100.0
+ 
+ def set_frequency(self, value):
+  pass
+ 
+ def get_pan(self):
+  return 0.0
+ 
+ def set_pan(self, value):
+  pass
 
 def play(track, immediately_play = True):
  """Play a track."""
@@ -27,15 +83,23 @@ def play(track, immediately_play = True):
     url = application.api.get_stream_url(track.id)
     if track.artists[0].bio is None:
      track.artists[0].populate(application.api.get_artist_info(track.artists[0].id))
-    stream = URLStream(url.encode())
-    if config.storage['download']:
-     Thread(target = download_track, args = [url, track.path]).start()
+    if not config.sound['pyglet']:
+     stream = URLStream(url.encode())
+    if config.storage['download'] or config.sound['pyglet']:
+     if config.sound['pyglet']:
+      download_track(url, track.path)
+      stream = PygletFileStream(track.path)
+     else:
+      Thread(target = download_track, args = [url, track.path]).start()
    except NotLoggedIn:
     return do_login(callback = play, args = [track])
   else:
-   stream = FileStream(file = track.path)
+   if config.sound['pyglet']:
+    stream = PygletFileStream(track.path)
+   else:
+    stream = FileStream(file = track.path)
   track.last_played = datetime.now()
-  if stream is not application.stream and application.stream is not None:
+  if not config.sound['pyglet'] and stream is not application.stream and application.stream is not None:
    Thread(target = fadeout, args = [application.stream]).start()
   if immediately_play:
    stream.play(True)
@@ -96,7 +160,11 @@ def set_volume(value):
  """Set volume to value."""
  actual_value = ((pow(config.sound['volume_base'], value / 100) - 1) / (config.sound['volume_base'] - 1)) * 100
  config.system['volume'] = value
- application.output.set_volume(actual_value)
+ if config.sound['pyglet']:
+  if application.stream:
+   application.stream.set_volume(actual_value / 100.0)
+ else:
+  application.output.set_volume(actual_value)
  application.frame.volume.SetValue(value)
  logger.info('Set volume to %.2f (%s%%).', actual_value, value)
 
