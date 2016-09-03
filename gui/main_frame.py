@@ -347,9 +347,12 @@ class MainFrame(wx.Frame):
     self.add_result(t)
    self.update_status()
   if application.stream:
-   pos = application.stream.get_position()
+   try:
+    pos = application.stream.get_position()
+   except AssertionError:
+    pos = 0.0
    length = application.stream.get_length()
-   if not self.position.HasFocus():
+   if not self.position.HasFocus() and length:
     self.position.SetValue(int(pos * (100 / length)))
    stop_after = self.stop_after.IsChecked()
    if (length - pos) <= (0 if stop_after else config.sound['fadeout_threshold']):

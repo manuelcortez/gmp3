@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 class ContextMenu(wx.Menu):
  def __init__(self, track):
   """Initialise with a track to populate the menu."""
-  print('Context created.')
   super(ContextMenu, self).__init__()
   self.track = track
   self.Bind(wx.EVT_MENU, lambda event: play(track), self.Append(wx.ID_ANY, '&Play', 'Play %s.' % track))

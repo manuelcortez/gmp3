@@ -17,49 +17,64 @@ logger = logging.getLogger(__name__)
 
 seek_amount = 100000
 
+try:
+ from pyglet.media import load, Player
+ player = Player()
+except ImportError:
+ player = None # No pyglet on this system.
+
 class PygletFileStream(object):
  """A stream that will play pyglet MP3's."""
+ @property
+ def volume(self):
+  return self.get_volume()
+ 
+ @volume.setter
+ def volume(self, value):
+  self.set_volume(value)
+ 
  def __init__(self, filename):
-  from pyglet.media import load, Player
-  self.player = Player()
-  self.player.queue(load(filename))
+  player.queue(load(filename))
   self.is_paused = False
   self.is_stopped = False
  
  def play(self, restart = False):
+  if not hasattr(player, 'has_played'):
+   player.next()
+   player.has_played = True # Don't do that again.
   if restart:
-   self.player.position = 0.0
-  self.player.play()
+   self.set_position(0.0)
+  player.play()
  
  def get_position(self):
-  return self.player.time
+  return player.time
  
  def set_position(self, value):
   try:
-   self.player.seek(value)
+   player.seek(value)
   except AttributeError:
    pass # No source to seek.
  
  def get_length(self):
   try:
-   return self.player.source.duration
+   return player.source.duration
   except AttributeError:
    return 0.0 # No source.
  
  def pause(self):
-  self.player.pause()
+  player.pause()
   self.is_paused = True
  
  def stop(self):
-  self.player.pause()
+  player.pause()
   self.set_position(0.0)
   self.is_stopped = True
  
  def get_volume(self):
-  return self.player.volume
+  return player.volume
  
  def set_volume(self, value):
-  self.player.volume = value
+  player.volume = value
  
  def get_frequency(self):
   return 44100.0
@@ -79,6 +94,7 @@ def play(track, immediately_play = True):
   if track is application.track and application.stream:
    stream = application.stream
   elif not track.downloaded:
+   print('Track is not downloaded.')
    try:
     url = application.api.get_stream_url(track.id)
     if track.artists[0].bio is None:
@@ -88,24 +104,34 @@ def play(track, immediately_play = True):
     if config.storage['download'] or config.sound['pyglet']:
      if config.sound['pyglet']:
       download_track(url, track.path)
-      stream = PygletFileStream(track.path)
+      play(track, immediately_play = immediately_play)
      else:
       Thread(target = download_track, args = [url, track.path]).start()
    except NotLoggedIn:
     return do_login(callback = play, args = [track])
   else:
    if config.sound['pyglet']:
-    stream = PygletFileStream(track.path)
+    try:
+     stream = PygletFileStream(track.path)
+    except Exception as e:
+     return do_error('Error playing track %s: %s' % (track, e))
    else:
     stream = FileStream(file = track.path)
   track.last_played = datetime.now()
-  if not config.sound['pyglet'] and stream is not application.stream and application.stream is not None:
-   Thread(target = fadeout, args = [application.stream]).start()
+  if stream is not application.stream and application.stream is not None:
+   if config.sound['pyglet']:
+    application.stream.pause()
+   else:
+    Thread(target = fadeout, args = [application.stream]).start()
   if immediately_play:
    stream.play(True)
+   print('Playing the track.')
+  print('Setting the volume to %s.' % config.system['volume'])
+  set_volume(config.system['volume'])
   set_pan(config.system['pan'])
   set_frequency(config.system['frequency'])
  else:
+  print('Track is None.')
   track = None
   stream = None
  if application.track is not track:
@@ -228,3 +254,4 @@ def fadeout(stream):
   sleep(0.2)
  stream.stop()
  logger.info('Stopped the stream after %.2f seconds.', time() - started)
+
