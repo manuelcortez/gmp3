@@ -1,6 +1,6 @@
 """The main frame."""
 
-import wx, application, showing, logging, sys
+import wx, application, showing, logging, sys, pyperclip
 from threading import Thread
 from six import string_types
 from wxgoodies.keys import add_accelerator
@@ -629,3 +629,7 @@ class MainFrame(wx.Frame):
     do_error('Cannot find %s in the %s playlist.' % (res, self.showing.name))
   else:
    do_error('No way to delete %s from the current view.' % res)
+ 
+ def do_copy_id(self, track):
+  """Copy the ID of the current track to the clipboard."""
+  pyperclip.copy(track.id)

@@ -20,3 +20,12 @@ class TrackMenu(BaseMenu):
   frame.Bind(wx.EVT_MENU, lambda event: playlist_action('Select a playlist to add this track to', 'Select A Playlist', add_to_playlist, frame.get_result()) if frame.get_result() is not None else wx.Bell(), self.Append(wx.ID_ANY, 'Add To &Playlist...\tCTRL+8', 'Add the currently selected track to a playlist.'))
   frame.Bind(wx.EVT_MENU, lambda event: add_to_playlist(frame.last_playlist, frame.get_result()) if frame.last_playlist is not None and frame.frame.get_result() is not None else wx.Bell(), self.Append(wx.ID_ANY, 'Add To Most Recent Playlist\tCTRL+RETURN', 'Add the currently selected track to the most recent playlist.'))
   frame.Bind(wx.EVT_MENU, frame.do_delete, self.Append(wx.ID_ANY, '&Delete\tDELETE', 'Delete the currently selected track from the current view.'))
+  frame.Bind(wx.EVT_MENU, self.copy_id, self.Append(wx.ID_ANY, '&Copy ID\tCTRL+SHIFT+C', 'Copy the ID of the current track to the clipboard.'))
+ 
+ def copy_id(self, event):
+  """Copy the ID of the current track to the clipboard."""
+  cr = self.frame.get_result()
+  if cr is None:
+   wx.Bell()
+  else:
+   self.frame.do_copy_id(cr)

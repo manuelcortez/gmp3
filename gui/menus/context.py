@@ -50,6 +50,7 @@ class ContextMenu(wx.Menu):
   self.Bind(wx.EVT_MENU, lambda event: self.add_rating(5), ratings_menu.Append(wx.ID_ANY, 'Thumbs &Up', 'Thumbs up this track.'))
   self.AppendSubMenu(ratings_menu, '&Thumb', 'Rate the track.')
   self.Bind(wx.EVT_MENU, lambda event: os.remove(track.path) if track.downloaded else self.download(), self.Append(wx.ID_ANY, 'Remove &Download' if track.downloaded else '&Download', 'Manage the downloaded state of this track.'))
+  self.Bind(wx.EVT_MENU, lambda event: application.frame.do_copy_id(track), self.Append(wx.ID_ANY, '&Copy ID', 'Copy the ID of the current track to the clipboard.'))
   self.Bind(wx.EVT_MENU, self.save_track, self.Append(wx.ID_ANY, '&Save Track...', 'Save the track to disk.'))
   self.Bind(wx.EVT_MENU, self.reload, self.Append(wx.ID_ANY, '&Reindex', 'Reindex the track from Google.'))
   self.Bind(wx.EVT_MENU, self.update_artists, self.Append(wx.ID_ANY, '&Update %s' % ('artist' if len(track.artists) == 1 else 'artists'), 'Update the stored artist information for this track.'))
