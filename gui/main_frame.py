@@ -383,7 +383,9 @@ class MainFrame(wx.Frame):
   if res is None:
    wx.Bell()
   else:
-   self.PopupMenu(ContextMenu(res), wx.GetMousePosition())
+   menu = ContextMenu(res)
+   self.PopupMenu(menu, wx.GetMousePosition())
+   menu.Destroy()
  
  def on_previous(self, event):
   """Play the previous track."""
