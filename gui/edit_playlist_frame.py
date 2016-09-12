@@ -1,10 +1,11 @@
 """Edit a playlist frame."""
 
-import wx
+import wx, application
+from gmusicapi.exceptions import NotLoggedIn
 from wx.lib.sized_controls import SizedFrame
 from wxgoodies.keys import add_accelerator
 from db import session
-from functions.util import do_error, delete_playlist
+from functions.util import do_login, do_error, delete_playlist
 
 class EditPlaylistFrame(SizedFrame):
  """A frame for editing playlists."""
@@ -42,6 +43,10 @@ class EditPlaylistFrame(SizedFrame):
   else:
    self.playlist.name = name
    self.playlist.description = description
+   try:
+    self.playlist.id = application.api.edit_playlist(self.playlist.id, new_name = name, new_description = description)
+   except NotLoggedIn:
+    return do_login(callback = self.on_ok, args = [event])
    session.add(self.playlist)
    session.commit()
    self.Close(True)
