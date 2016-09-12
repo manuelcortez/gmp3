@@ -1,6 +1,12 @@
-"""Base menu class."""
+"""Base menu."""
 
-import wx
+import wx, application
 
 class BaseMenu(wx.Menu):
- name = None # The name of this menu.
+ name = '&Untitled'
+
+def get_id(callback):
+ """Get a new ID and bind callback to it."""
+ id = wx.NewId()
+ application.frame.Bind(wx.EVT_MENU, callback, id = id)
+ return id

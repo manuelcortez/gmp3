@@ -20,7 +20,7 @@ if __name__ == '__main__':
   from gui.main_frame import MainFrame
   application.frame = MainFrame(None)
   application.frame.Show(True)
-  application.frame.Maximize()
+  application.frame.Maximize(True)
   application.app.MainLoop()
   logging.info('Done.')
  except Exception as e:

@@ -2,6 +2,7 @@
 
 import wx, application, showing, logging, sys, pyperclip
 from threading import Thread
+from functools import partial
 from six import string_types
 from wxgoodies.keys import add_accelerator
 from datetime import timedelta
@@ -13,11 +14,10 @@ from gmusicapi.exceptions import NotLoggedIn
 from lyricscraper.lyrics import Lyrics
 from functions.network import get_lyrics
 from functions.util import do_login, do_error, format_track, format_timedelta, load_playlist, load_station, clean_library
-from functions.google import artist_action, delete_station, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action, remove_from_playlist
+from functions.google import artist_action, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action, remove_from_playlist
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
 from lyrics import LocalEngine
 from .menus.context import ContextMenu
-from .menus.main import MainMenu
 from .edit_playlist_frame import EditPlaylistFrame
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,8 @@ PAUSE_LABEL = '&Pause'
 class MainFrame(wx.Frame):
  """The main frame."""
  def __init__(self, *args, **kwargs):
+  self.commands = [] # Commands to be executed from the context menu.
+  self.initialised = False # Set to True when everything's done.
   super(MainFrame, self).__init__(*args, **kwargs)
   self.played = [] # The tracks from the current view which have already been played.
   self.last_playlist = None # The playlist that most recently had a track added to it.
@@ -46,6 +48,7 @@ class MainFrame(wx.Frame):
   self.play.Bind(wx.EVT_BUTTON, self.play_pause)
   self.next = wx.Button(p, label = '&Next')
   self.next.Bind(wx.EVT_BUTTON, self.on_next)
+  self.menu = wx.Button(p, label = '&Menu')
   self.search_label = wx.StaticText(p, label = SEARCH_LABEL)
   self.search = wx.TextCtrl(p, style = wx.TE_PROCESS_ENTER)
   self.search.Bind(wx.EVT_TEXT_ENTER, lambda event: self.do_local_search(self.search.GetValue()) if self.offline_search.IsChecked() else self.do_remote_search(self.search.GetValue()))
@@ -53,6 +56,7 @@ class MainFrame(wx.Frame):
    (self.previous, 0, wx.GROW),
    (self.play, 0, wx.GROW),
    (self.next, 0, wx.GROW),
+   (self.menu, 0, wx.GROW),
    (self.search_label, 0, wx.GROW),
    (self.search, 1, wx.GROW)
   ])
@@ -99,39 +103,36 @@ class MainFrame(wx.Frame):
   p.SetSizerAndFit(s)
   self.SetTitle()
   self.Bind(wx.EVT_CLOSE, self.on_close)
-  self.SetMenuBar(MainMenu(self))
   self.Bind(wx.EVT_SHOW, self.on_show)
   self.playlists = {} # A list of playlist: id key: value pairs.
-  playlists = session.query(Playlist).order_by(Playlist.name).all()
-  playlists.reverse()
-  for p in playlists:
-   self.add_playlist(p)
   self.stations = {} # The same as .playlists except for radio stations.
-  for s in session.query(Station).order_by(Station.name.desc()).all():
-   self.add_station(s)
   self.status = self.CreateStatusBar()
   self.status.SetStatusText('Nothing playing yet')
+  add_accelerator(self, 'CTRL+R', self.cycle_repeat)
  
  def add_playlist(self, playlist):
   """Add playlist to the menu."""
   if playlist not in self.playlists:
    id = wx.NewId()
    self.playlists[playlist] = id
-   self.Bind(wx.EVT_MENU, lambda event, playlist = playlist: self.add_results(playlist.tracks, showing = playlist), self.playlists_menu.Insert(0, id, '&%s' % playlist.name, playlist.description))
+   self.playlists_menu.add_playlist(playlist, id = id)
+   logger.info('Adding playlist %s with id %s.', playlist.name, id)
    return True
   else:
+   logger.info('Playlist %s already had an id of %s.', playlist.name, self.playlists[playlist])
    return False
  
  def add_station(self, station):
-  """Add playlist to the menu."""
+  """Add station to the menu."""
   if station not in self.stations:
    id = wx.NewId()
    delete_id = wx.NewId()
    self.stations[station] = [id, delete_id]
-   self.Bind(wx.EVT_MENU, lambda event, station = station: self.load_station(station), self.stations_menu.Insert(0, id, '&%s' % station.name, 'Load the %s station.' % station.name))
-   self.Bind(wx.EVT_MENU, lambda event, station = station: delete_station(station) if wx.MessageBox('Are you sure you want to delete the %s station?' % station.name, 'Are You Sure?', style = wx.ICON_QUESTION | wx.YES_NO) == wx.YES else None, self.delete_stations_menu.Insert(0, delete_id, '&%s' % station.name, 'Delete the %s station' % station.name))
+   self.stations_menu.add_station(station, id = id, delete_id = delete_id)
+   logger.info('Adding station %s with an id of %s and a delete id of %s.', station.name, *self.stations[station])
    return True
   else:
+   logger.info('Station %s already has an id of %s and a delete id of %s.', station.name, *self.stations[station])
    return False
  
  def edit_playlist(self, event):
@@ -144,7 +145,23 @@ class MainFrame(wx.Frame):
  
  def on_show(self, event):
   """Show the window."""
-  set_volume(config.system['volume'])
+  if not self.initialised:
+   from .menus.main import MainMenu
+   from .menus.playlists import PlaylistsMenu
+   from .menus.stations import StationsMenu
+   from .menus.taskbar import TaskBarMenu
+   self.menu.Bind(wx.EVT_BUTTON, lambda event: self.PopupMenu(TaskBarMenu(self), wx.GetMousePosition()))
+   from .taskbar import TaskBarIcon
+   self.tb_icon = TaskBarIcon()
+   self.playlists_menu = PlaylistsMenu(self, add_playlists = False)
+   self.stations_menu = StationsMenu(self, add_stations = False)
+   self.delete_stations_menu = self.stations_menu.delete_menu
+   self.SetMenuBar(MainMenu(self))
+   for p in session.query(Playlist).order_by(Playlist.name.desc()).all():
+    self.add_playlist(p)
+   for s in session.query(Station).order_by(Station.name.desc()).all():
+    self.add_station(s)
+   set_volume(config.system['volume'])
  
  def SetTitle(self):
   """Set the title to something."""
@@ -285,6 +302,8 @@ class MainFrame(wx.Frame):
  
  def on_close(self, event):
   """Close the window."""
+  self.tb_icon.Destroy()
+  logger.info('Destroyed the taskbar icon.')
   event.Skip()
   logger.info('Main frame closed.')
   self.position_timer.Stop()
@@ -294,23 +313,13 @@ class MainFrame(wx.Frame):
    logger.info('Stopped the currently playing stream.')
   else:
    logger.info('No track to stop.')
-  logger.info('Updating configuration...')
-  config.system['stop_after'] = self.stop_after.IsChecked()
-  config.system['shuffle'] = self.shuffle.IsChecked()
-  config.system['offline_search'] = self.offline_search.IsChecked()
-  config.system['volume'] = self.volume.GetValue()
-  if self.repeat_track.IsChecked():
-   config.system['repeat'] = 1
-  elif self.repeat_all.IsChecked():
-   config.system['repeat'] = 2
-  else:
-   config.system['repeat'] = 0
   logger.info('Running session.commit.')
   session.commit()
   logger.info('Dumping configuration to disk.')
   save()
   logger.info('Cleaning the media directory.')
   clean_library()
+  logger.info('Library cleaned.')
  
  def on_activate(self, event):
   """Enter was pressed on a track."""
@@ -331,6 +340,13 @@ class MainFrame(wx.Frame):
  
  def play_manager(self, event):
   """Manage the currently playing track."""
+  while self.commands:
+   cmd = self.commands.pop()
+   logger.info('Calling command %s.', cmd)
+   try:
+    wx.CallAfter(cmd)
+   except Exception as e:
+    logger.exception(e)
   try:
    load_playlist(self.playlist_action.playlists.pop(0))
   except AttributeError: # There is either no playlist action, or there are no playlists to load yet.
@@ -389,17 +405,11 @@ class MainFrame(wx.Frame):
  
  def on_previous(self, event):
   """Play the previous track."""
-  if self.view.HasFocus():
-   play(get_previous())
-  else:
-   event.Skip()
+  play(get_previous())
  
  def on_next(self, event):
   """Play the next track."""
-  if self.view.HasFocus():
-   play(get_next(remove = True))
-  else:
-   event.Skip()
+  play(get_next(remove = True))
  
  def rewind(self, event):
   """Rewind the current track."""
@@ -635,3 +645,7 @@ class MainFrame(wx.Frame):
  def do_copy_id(self, track):
   """Copy the ID of the current track to the clipboard."""
   pyperclip.copy(track.id)
+ 
+ def add_command(self, callback, *args, **kwargs):
+  """Add a command to be called by play_manager."""
+  self.commands.append(partial(callback, *args, **kwargs))

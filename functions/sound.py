@@ -94,7 +94,6 @@ def play(track, immediately_play = True):
   if track is application.track and application.stream:
    stream = application.stream
   elif not track.downloaded:
-   print('Track is not downloaded.')
    try:
     url = application.api.get_stream_url(track.id)
     if track.artists[0].bio is None:
@@ -125,13 +124,10 @@ def play(track, immediately_play = True):
     Thread(target = fadeout, args = [application.stream]).start()
   if immediately_play:
    stream.play(True)
-   print('Playing the track.')
-  print('Setting the volume to %s.' % config.system['volume'])
   set_volume(config.system['volume'])
   set_pan(config.system['pan'])
   set_frequency(config.system['frequency'])
  else:
-  print('Track is None.')
   track = None
   stream = None
  if application.track is not track:
@@ -144,7 +140,7 @@ def play(track, immediately_play = True):
 
 def get_next(remove = True):
  """Get the next track which should be played. If remove == True, delete the track from the queue if that's where it came from."""
- if application.frame.repeat_track.IsChecked():
+ if hasattr(application.frame, 'repeat_track') and application.frame.repeat_track.IsChecked():
   return application.track
  t = None
  if application.frame.queue:
@@ -152,7 +148,7 @@ def get_next(remove = True):
   if remove:
    application.frame.queue.remove(t)
  else:
-  if application.frame.shuffle.IsChecked():
+  if hasattr(application.frame, 'shuffle') and application.frame.shuffle.IsChecked():
    if remove:
     t = choice([x for x in application.frame.results if x not in application.frame.played])
     application.frame.played.append(t)
@@ -162,7 +158,7 @@ def get_next(remove = True):
   try:
    t = application.frame.results[application.frame.results.index(application.track) + 1]
   except IndexError: # We're at the end.
-   if application.frame.results and application.frame.repeat_all.IsChecked():
+   if application.frame.results and hasattr(application.frame, 'repeat_all') and application.frame.repeat_all.IsChecked():
     t = application.frame.results[0]
    else:
     pass # t is already None.
@@ -175,7 +171,7 @@ def get_next(remove = True):
 
 def get_previous():
  """Get the previous track."""
- if application.frame.repeat_track.IsChecked():
+ if hasattr(application.frame, 'repeat_track') and application.frame.repeat_track.IsChecked():
   return application.track
  try:
   return application.frame.results[application.frame.results.index(application.track) - 1]
