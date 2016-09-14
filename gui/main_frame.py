@@ -601,7 +601,8 @@ class MainFrame(wx.Frame):
      value = 'No lyrics found for {artist} - {title}.'.format(artist = track.artist, title = track.title)
     else:
      value = ''
-   self.lyrics.SetValue(value)
+   if track is application.track: # Don't update for the wrong song.
+    self.lyrics.SetValue(value)
    if track.artists[0].bio is not None:
     self.artist_bio.SetValue(track.artists[0].bio.strip())
    else:
@@ -619,7 +620,8 @@ class MainFrame(wx.Frame):
     lyrics = Lyrics(track.artist, track.title, track.lyrics, LocalEngine())
    else:
     lyrics = None
-  wx.CallAfter(f, track, lyrics)
+  if track is not None:
+   wx.CallAfter(f, track, lyrics)
  
  def do_delete(self, event):
   """Delete the current result from the current view."""
