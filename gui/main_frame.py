@@ -460,14 +460,14 @@ class MainFrame(wx.Frame):
   if res is None:
    wx.Bell()
   else:
-   def f(track):
+   def f(id):
     """Load the album and show it."""
     try:
-     album = application.api.get_album_info(track.album_id)
-     wx.CallAfter(application.frame.add_results, album.get('tracks', []), showing = '%s - %s' % (track.artist, album.get('name', 'Unknown Album %s' % track.year)))
+     album = application.api.get_album_info(id)
+     wx.CallAfter(self.add_results, album.get('tracks', []), showing = '%s - %s' % (album.get('artist', 'Unknown Artist'), album.get('name', 'Unknown Album %s' % album.get('year'))))
     except NotLoggedIn:
-     do_login(callback = f, args = [track])
-   Thread(target = f, args = [res]).start()
+     do_login(callback = f, args = [id])
+   Thread(target = f, args = [res.album_id]).start()
  
  def get_result(self):
   """Return the currently focused result."""
