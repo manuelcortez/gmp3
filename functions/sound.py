@@ -124,6 +124,8 @@ def play(track, immediately_play = True):
     Thread(target = fadeout, args = [application.stream]).start()
   if immediately_play:
    stream.play(True)
+   if config.interface['notify']:
+    application.frame.tb_icon.notify('Now playing %s.' % track)
   set_volume(config.system['volume'])
   set_pan(config.system['pan'])
   set_frequency(config.system['frequency'])

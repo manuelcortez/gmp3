@@ -62,7 +62,8 @@ class Config(Section):
   result_format = Option('{artist} - {album} - {number} - {title} ({length})', title = '&Track Format')
   status_bar_format = Option('{text} ({loaded} / {total} loaded {percentage}%) [{duration}]', title = '&Status Bar Format')
   results = Option(25, title = '&Results To Download', validator = Integer(min = 1, max = 100))
-  option_order = [clear_queue, result_format, status_bar_format, results]
+  notify = Option(False, title = '&Notify for each playing track', validator = Boolean)
+  option_order = [clear_queue, result_format, status_bar_format, results, notify]
  
  class storage(Section):
   """Storage configuration."""
