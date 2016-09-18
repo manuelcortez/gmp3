@@ -30,8 +30,10 @@ class PlayMenu(BaseMenu):
   self.repeat_all = repeat_menu.AppendRadioItem(wx.ID_ANY, '&All', 'Repeat all.')
   wx.CallAfter([self.repeat_off, self.repeat_track, self.repeat_all][config.system['repeat']].Check, True)
   for value, option in enumerate(['repeat_off', 'repeat_track', 'repeat_all']):
+   control = getattr(self, option)
+   parent.Bind(wx.EVT_MENU, lambda event, value = value: config.system.repeat.set(value), control)
    if not hasattr(application.frame, option):
-    setattr(application.frame, option, getattr(self, option))
+    setattr(application.frame, option, control)
   self.AppendSubMenu(repeat_menu, '&Repeat')#, 'Repeat options')
   shuffle = self.AppendCheckItem(wx.ID_ANY, '&Shuffle\tCTRL+H', 'Play all tracks shuffled.')
   parent.Bind(wx.EVT_MENU, lambda event: application.frame.add_command(self.do_shuffle, bool(event.GetSelection())), shuffle)
