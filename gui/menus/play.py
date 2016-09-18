@@ -30,14 +30,12 @@ class PlayMenu(BaseMenu):
   self.repeat_all = repeat_menu.AppendRadioItem(wx.ID_ANY, '&All', 'Repeat all.')
   wx.CallAfter([self.repeat_off, self.repeat_track, self.repeat_all][config.system['repeat']].Check, True)
   for value, option in enumerate(['repeat_off', 'repeat_track', 'repeat_all']):
-   parent.Bind(wx.EVT_MENU, lambda event, value = value: application.frame.add_command(self.do_repeat, value), getattr(self, option))
    if not hasattr(application.frame, option):
     setattr(application.frame, option, getattr(self, option))
   self.AppendSubMenu(repeat_menu, '&Repeat')#, 'Repeat options')
   shuffle = self.AppendCheckItem(wx.ID_ANY, '&Shuffle\tCTRL+H', 'Play all tracks shuffled.')
-  parent.Bind(wx.EVT_MENU, lambda event: config.system.shuffle.set(True), shuffle)
+  parent.Bind(wx.EVT_MENU, lambda event: application.frame.add_command(self.do_shuffle, bool(event.GetSelection())), shuffle)
   shuffle.Check(config.system['shuffle'])
-  parent.Bind(wx.EVT_MENU, self.do_shuffle, shuffle)
   if not hasattr(application.frame, 'shuffle'):
    application.frame.shuffle = shuffle
  
@@ -45,13 +43,11 @@ class PlayMenu(BaseMenu):
   """Setup stop_after."""
   config.system['stop_after'] = value
   application.frame.stop_after.Check(value)
+  application.frame.tb_icon.notify('%s after the current track.' % ('Stop ' if value else 'Don\'t stop'))
  
- def do_repeat(self, value):
-  """Setup repeat."""
-  config.system['repeat'] = value
-  [application.frame.repeat_off, application.frame.repeat_track, application.frame.repeat_all][value].Check(True)
- 
- def do_shuffle(self, event):
+ def do_shuffle(self, value):
   """Organise the shuffle."""
-  application.frame.playing = []
-  config.system['shuffle'] = bool(event.GetSelection())
+  if value:
+   application.frame.playing = []
+  config.system['shuffle'] = value
+  application.frame.tb_icon.notify('Shuffle %s.' % ('on' if value else 'off'))

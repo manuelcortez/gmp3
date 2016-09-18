@@ -532,13 +532,18 @@ class MainFrame(wx.Frame):
   if self.repeat_off.IsChecked():
    self.repeat_track.Check(True)
    mode = 'track'
+   value = 1
   elif self.repeat_track.IsChecked():
    self.repeat_all.Check(True)
    mode = 'all'
+   value = 2
   else:
    self.repeat_off.Check(True)
    mode = 'off'
+   value = 0
+  config.system['repeat'] = value
   logger.info('Set repeat mode to %s.' % mode)
+  self.tb_icon.notify('Repeat %s.' % mode)
  
  def do_stop(self, event):
   """Stop the currently playing track."""

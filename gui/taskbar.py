@@ -12,3 +12,7 @@ class TaskBarIcon(_TaskBarIcon):
  def CreatePopupMenu(self):
   """Get the right click menu."""
   return TaskBarMenu(self)
+ 
+ def notify(self, message):
+  """Notify the user of something."""
+  return self.ShowBalloon(application.name, message)
