@@ -17,6 +17,7 @@ class ContextMenu(wx.Menu):
   super(ContextMenu, self).__init__()
   self.track = track
   self.Bind(wx.EVT_MENU, lambda event: play(track), self.Append(wx.ID_ANY, '&Play', 'Play %s.' % track))
+  self.Bind(wx.EVT_MENU, lambda event: application.frame.add_command(application.frame.queue.insert, 0, track), self.Append(wx.ID_ANY, 'Play &Next', 'Put the current track at the head of the play queue.'))
   self.Bind(wx.EVT_MENU, lambda event: queue(track), self.Append(wx.ID_ANY, '&Queue Track', 'Add %s to the play queue.' % track))
   unqueue_item = self.Append(wx.ID_ANY, '&Unqueue Track', 'Remove the track from the play queue.')
   self.Bind(wx.EVT_MENU, lambda event: unqueue(track), unqueue_item)
