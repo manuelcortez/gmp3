@@ -4,7 +4,7 @@ import wx, application, showing, logging, sys, pyperclip
 from threading import Thread
 from functools import partial
 from six import string_types
-from wxgoodies.keys import add_accelerator
+from wxgoodies.keys import add_accelerator, add_hotkey
 from datetime import timedelta
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
 from config import save, config
@@ -32,6 +32,9 @@ class MainFrame(wx.Frame):
   self.commands = [] # Commands to be executed from the context menu.
   self.initialised = False # Set to True when everything's done.
   super(MainFrame, self).__init__(*args, **kwargs)
+  add_hotkey(self, 'MEDIA_PLAY_PAUSE', self.play_pause)
+  add_hotkey(self, 'MEDIA_PREV_TRACK', self.on_previous)
+  add_hotkey(self, 'MEDIA_NEXT_TRACK', self.on_next)
   self.played = [] # The tracks from the current view which have already been played.
   self.last_playlist = None # The playlist that most recently had a track added to it.
   self.playlist_action = None # An action to be called when all playlists have been localised.
