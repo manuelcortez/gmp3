@@ -32,9 +32,12 @@ class MainFrame(wx.Frame):
   self.commands = [] # Commands to be executed from the context menu.
   self.initialised = False # Set to True when everything's done.
   super(MainFrame, self).__init__(*args, **kwargs)
-  add_hotkey(self, 'MEDIA_PLAY_PAUSE', self.play_pause)
-  add_hotkey(self, 'MEDIA_PREV_TRACK', self.on_previous)
-  add_hotkey(self, 'MEDIA_NEXT_TRACK', self.on_next)
+  try:
+   add_hotkey(self, 'MEDIA_PLAY_PAUSE', self.play_pause)
+   add_hotkey(self, 'MEDIA_PREV_TRACK', self.on_previous)
+   add_hotkey(self, 'MEDIA_NEXT_TRACK', self.on_next)
+  except RuntimeError:
+   logger.warning('Media keys will not be available because no win32con found.')
   self.played = [] # The tracks from the current view which have already been played.
   self.last_playlist = None # The playlist that most recently had a track added to it.
   self.playlist_action = None # An action to be called when all playlists have been localised.
