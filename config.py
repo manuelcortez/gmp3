@@ -94,7 +94,7 @@ class Config(Section):
   offline_search = Option(False, validator = Boolean)
   repeat = Option(0, validator = Integer(min = 0, max = 2))
   output_device_index = Option(application.output.device, validator = Integer(min = -1))
-  output_device_name = Option(application.output.get_device_names()[application.output.device])
+  output_device_name = Option(application.output.get_device_names()[application.output.device - 1])
  
  def load(self):
   """Load configuration from disk."""

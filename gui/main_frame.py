@@ -157,8 +157,13 @@ class MainFrame(wx.Frame):
    from .menus.stations import StationsMenu
    from .menus.taskbar import TaskBarMenu
    self.menu.Bind(wx.EVT_BUTTON, lambda event: self.PopupMenu(TaskBarMenu(self), wx.GetMousePosition()))
-   from .taskbar import TaskBarIcon
-   self.tb_icon = TaskBarIcon()
+   from .taskbar import TaskBarIcon, FakeTaskBarIcon
+   try:
+    self.tb_icon = TaskBarIcon()
+   except SystemError as e:
+    self.tb_icon = FakeTaskBarIcon()
+    logger.warning('Creating the taskbar icon caused an errorL')
+    logger.exception(e)
    self.playlists_menu = PlaylistsMenu(self, add_playlists = False)
    self.stations_menu = StationsMenu(self, add_stations = False)
    self.delete_stations_menu = self.stations_menu.delete_menu
@@ -309,7 +314,6 @@ class MainFrame(wx.Frame):
  def on_close(self, event):
   """Close the window."""
   self.tb_icon.Destroy()
-  logger.info('Destroyed the taskbar icon.')
   event.Skip()
   logger.info('Main frame closed.')
   self.position_timer.Stop()
