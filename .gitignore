@@ -94,3 +94,5 @@ creds.ini
 *.db
 x.py
 test.py
+installer.iss
+server

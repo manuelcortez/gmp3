@@ -1,0 +1,20 @@
+; -- Example1.iss --
+; Demonstrates copying 3 files and creating an icon.
+
+; SEE THE DOCUMENTATION FOR DETAILS ON CREATING .ISS SCRIPT FILES!
+
+[Setup]
+AppName={{ app_name }}
+AppVersion={{ app_version }}
+DefaultDirName={pf}\{{ app_name }}
+DefaultGroupName={{ app_name }}
+Compression=lzma2
+SolidCompression=yes
+OutputDir=userdocs:Inno Setup Examples Output
+
+[Files]
+Source: "dist\GMP3\*"; DestDir: "{app}"
+Source: "LICENSE"; DestDir: "{app}"; Flags: isreadme
+
+[Icons]
+Name: "{group}\My Program"; Filename: "{app}\MyProg.exe"
