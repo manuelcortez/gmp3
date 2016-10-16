@@ -89,16 +89,17 @@ def load_station(station):
 def clean_library():
  """Remove unwanted files and directories from the media directory."""
  dir = config.storage['media_dir']
- tracks = ['%s.mp3' % t.id for t in db.session.query(db.Track).all()]
- for thing in os.listdir(dir):
-  path = os.path.join(dir, thing)
-  if os.path.isdir(path):
-   logger.info('Removing directory %s.', path)
-   os.removedirs(path)
-  else:
-   if thing not in tracks:
-    logger.info('Removing file %s.', path)
-    os.remove(path)
+ if os.path.isdir(dir):
+  tracks = ['%s.mp3' % t.id for t in db.session.query(db.Track).all()]
+  for thing in os.listdir(dir):
+   path = os.path.join(dir, thing)
+   if os.path.isdir(path):
+    logger.info('Removing directory %s.', path)
+    os.removedirs(path)
+   else:
+    if thing not in tracks:
+     logger.info('Removing file %s.', path)
+     os.remove(path)
 
 def prune_library():
  """Delete the least recently downloaded tracks in the catalogue."""

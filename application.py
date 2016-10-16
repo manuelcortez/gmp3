@@ -3,7 +3,9 @@
 import wx
 
 name = 'GMP3'
-__version__ = '3.1'
+__version__ = '4.0.0'
+url = 'https://github.com/chrisnorman7/gmp3'
+
 
 app = wx.App(False)
 app.SetAppName(name)
