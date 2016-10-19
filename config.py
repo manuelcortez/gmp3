@@ -82,6 +82,14 @@ class Config(Section):
   echo = EchoOption(False, title = 'Enable Database &Debugging', validator = Boolean)
   option_order = [url, echo]
  
+ class http(Section):
+  """HTTP Server configuration."""
+  title = 'HTTP Server'
+  enabled = Option(True, title = '&Enable Web Server', validator = Boolean)
+  uid = Option('admin', title = '&Username')
+  pwd = Option('password', title = '&Password')
+  option_order = [enabled, uid, pwd]
+ 
  class system(Section):
   """System configuration."""
   title = 'System'
@@ -114,7 +122,8 @@ sections = [
  config.login,
  config.interface,
  config.storage,
- config.db
+ config.db,
+ config.http
 ]
 
 if config.system['output_device_name'] in application.output.get_device_names() and application.output.find_device_by_name(config.system['output_device_name']) == config.system['output_device_index'] and config.system['output_device_index'] != application.output.device:

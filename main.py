@@ -21,7 +21,12 @@ if __name__ == '__main__':
   application.frame = MainFrame(None)
   application.frame.Show(True)
   application.frame.Maximize(True)
+  from server.base import app
+  from threading import Thread
+  Thread(target = app.run, args = ['0.0.0.0', 4673]).start()
   application.app.MainLoop()
+  from twisted.internet import reactor
+  reactor.callFromThread(reactor.stop)
   logging.info('Done.')
  except Exception as e:
   logging.exception(e)

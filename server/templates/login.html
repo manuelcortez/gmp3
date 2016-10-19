@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+{% block main %}
+<h1>Login</h1>
+{% if username or password %}
+<p>Invalid username or password. For correct values check the <em>HTTP Server</em> configuration of {{ app_name }}.</p>
+{% endif %}
+<form action="/" method="post">
+{% for field in form %}
+<p>{{ field.label }} {{ field }}</p>
+{% endfor %}
+<p><input type="submit" value="Login"></p>
+</form>
+{% endblock %}

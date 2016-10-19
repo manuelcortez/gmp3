@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{%block title %}Web Interface{% endblock %}
+{% block head %}
+<script id="Script_jQuery" src="//ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js" type="text/javascript"></script>
+<script id="Script_jQueryUI" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" type="text/javascript"></script>
+<script id="Script_JsRender" src="//cdnjs.cloudflare.com/ajax/libs/jsrender/0.9.75/jsrender.min.js" type="text/javascript"></script>
+<script>
+function has_changed(array1, array2) {
+ return (array1.length != array2.length) && !array1.every(function(element, index) {
+  return element == array2[index]
+ })
+}
+old_playlists = []
+old_stations = []
+old_tracks = []
+old_now_playing = null
+old_previous = null
+old_next = null
+old_play_pause = null
+old_volume = 0
+{% raw %}
+playlist_template = $.templates("<h4><a href=\"javascript:$.get('/playlist/{{:key}}')\">{{if name}}{{>name}}{{else}}Untitled Playlist{{/if}}</a></h4><p>{{if description}}{{>description}}{{else}}No description available.{{/if}}</p>")
+station_template = $.templates("<li><a href=\"javascript:$.get('/station/{{:key}}')\">{{>name}}</a></li>")
+track_template = $.templates("<tr><td>{{>name}}</td><td><a href=\"javascript:$.get('/play_track/{{:key}}')\">Play</a></td><td><a href=\"javascript:$.get('/queue_track/{{:key}}')\">Queue</a></td></tr>")
+{% endraw %}
+volume_pulse = null
+$(document).ready(function(){
+ $("#volume").focus(function() {
+  volume_pulse = setInterval(function(){
+   if ($("#volume").val() != old_volume) {
+    old_volume = $("#volume").val()
+    $.get("/volume/" + old_volume)
+   }
+  }, 100)
+ }).blur(function(){
+  clearInterval(volume_pulse)
+ })
+ $("#playlists").hide()
+ $("#stations").hide()
+ $("#search_form").submit(function (e) {
+  e.preventDefault()
+  search = $("#search").prop("value")
+  if (search) {
+   $("#search").prop("value", "")
+   $.get("/search/" + search)
+  } else {
+   alert("You must enter something to search for.")
+  }
+ });
+ setInterval(function() {
+  $.getJSON('/info', function(data) {
+   playlists = data.playlists
+   stations = data.stations
+   tracks = data.tracks
+   now_playing = data.now_playing
+   previous = data.previous
+   next = data.next
+   volume = data.volume
+   play_pause = data.play_pause
+   if (has_changed(playlists, old_playlists)) {
+    var text = ""
+    for (i = 0; i < playlists.length; i++) {
+     text += playlist_template.render(playlists[i])
+    }
+    $("#playlists").html(text)
+   }
+   if (has_changed(stations, old_stations)) {
+    text = "<ul>"
+    for (i = 0; i < stations.length; i++) {
+     text += station_template.render(stations[i])
+    }
+    $("#stations").html(text)
+   }
+   if (has_changed(tracks, old_tracks)) {
+    var text = "<table><tr><th>Name</th><th>Play</th><th>Queue</th></tr>"
+    for (i = 0; i < tracks.length; i++) {
+     text += track_template.render(tracks[i])
+    }
+    text += '</table>'
+    $("#tracks").html(text)
+   }
+   if (now_playing != old_now_playing) {
+    old_now_playing = now_playing
+    $("#now_playing").text("Now playing: " + now_playing)
+   }
+   if (previous != old_previous) {
+    old_previous = previous
+    $("#track_previous").prop("value", previous)
+   }
+   if (next != old_next) {
+    old_next = next
+    $("#track_next").prop("value", next)
+   }
+   if (!($("#volume").is("focus"))) {
+    $("#volume").val(volume)
+   }
+   if (play_pause != old_play_pause) {
+    old_play_pause = play_pause
+    $("#play_pause").prop("value", play_pause)
+   }
+   old_playlists = playlists
+   old_stations = stations
+   old_tracks = tracks
+  })
+ }, 1000)
+})
+</script>
+{% endblock %}
+{% block main %}
+<h1><a href="{{ app_url }}">{{ app_name }} {{ app_version }}</a></h1>
+<h2><div id="now_playing">Loading...</div></h2>
+<table>
+<tr>
+<td><input type="button" id="track_previous" onclick="$.get('/track/previous')" value="Previous"></td>
+<td><input type="button" id="play_pause" onclick="$.get('/track/play_pause')" value = "Play or Pause"></td>
+<td><input type="button" id="track_next" onclick="$.get('/track/next')" value="Next"></td>
+</tr>
+<tr>
+<td><input type="button" onclick="$.get('/track/volume_down')" value="Volume Down"></td>
+<td><input type="range" step="5" id="volume" value="0" min="0" max="100"></td>
+<td><input type="button" onclick="$.get('/track/volume_up')" value="Volume Up"></td>
+</tr>
+</table>
+<h3><a href="javascript:$('#playlists').toggle();">Playlists</a></h3>
+<div id="playlists">
+<p>Loading...</p>
+</div>
+<h3><a href="javascript:$('#stations').toggle()">Radio Stations</a></h3>
+<div id="stations">
+<p>Loading...</p>
+</div>
+<hr/>
+<h3><a href="javascript:$('#tracks').toggle()">Tracks</a></h3>
+<form id="search_form">
+<p>Search: {{ form.search }}</p>
+<p><input type="submit" value="Search"></p>
+</form>
+<div id="tracks">
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-; -- Example1.iss --
+; -- Copied from Example1.iss --
 ; Demonstrates copying 3 files and creating an icon.
 
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING .ISS SCRIPT FILES!
@@ -6,15 +6,19 @@
 [Setup]
 AppName={{ app_name }}
 AppVersion={{ app_version }}
+LicenseFile=LICENSE.txt
 DefaultDirName={pf}\{{ app_name }}
 DefaultGroupName={{ app_name }}
 Compression=lzma2
 SolidCompression=yes
-OutputDir=userdocs:Inno Setup Examples Output
+OutputDir="dist\installer"
+OutputBaseFilename={{ app_name }}-{{ app_version }}-setup
 
 [Files]
-Source: "dist\GMP3\*"; DestDir: "{app}"
-Source: "LICENSE"; DestDir: "{app}"; Flags: isreadme
+Source: "dist\GMP3\*"; DestDir: "{app}"; flags: recursesubdirs createallsubdirs
+Source: "LICENSE.txt"; DestDir: "{app}"
 
 [Icons]
-Name: "{group}\My Program"; Filename: "{app}\MyProg.exe"
+Name: "{group}\{{ app_name }}"; Filename: "{app}\{{ app_name }}.exe"
+Name: "{group}\{{ app_name }} License"; Filename: "{app}\LICENSE.txt"
+Name: "{group}\Uninstall {{ app_name }}"; Filename: "{uninstallexe}"

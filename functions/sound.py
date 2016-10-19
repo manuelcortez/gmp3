@@ -145,7 +145,7 @@ def get_next(remove = True):
  if hasattr(application.frame, 'repeat_track') and application.frame.repeat_track.IsChecked():
   return application.track
  t = None
- if application.frame.queue:
+ if application.frame is not None and application.frame.queue:
   t = application.frame.queue[0]
   if remove:
    application.frame.queue.remove(t)
@@ -159,8 +159,8 @@ def get_next(remove = True):
     return None
   try:
    t = application.frame.results[application.frame.results.index(application.track) + 1]
-  except IndexError: # We're at the end.
-   if application.frame.results and hasattr(application.frame, 'repeat_all') and application.frame.repeat_all.IsChecked():
+  except (IndexError, AttributeError): # We're at the end.
+   if application.frame is not None and application.frame.results and hasattr(application.frame, 'repeat_all') and application.frame.repeat_all.IsChecked():
     t = application.frame.results[0]
    else:
     pass # t is already None.
@@ -177,7 +177,7 @@ def get_previous():
   return application.track
  try:
   return application.frame.results[application.frame.results.index(application.track) - 1]
- except (IndexError, ValueError):
+ except (IndexError, ValueError, AttributeError):
   return None
 
 def set_volume(value):

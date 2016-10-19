@@ -6,6 +6,7 @@ from functools import partial
 from six import string_types
 from wxgoodies.keys import add_accelerator, add_hotkey
 from datetime import timedelta
+from server import tracks
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
 from config import save, config
 from sqlalchemy import func, or_
@@ -23,8 +24,8 @@ from .edit_playlist_frame import EditPlaylistFrame
 logger = logging.getLogger(__name__)
 SEARCH_LABEL = '&Find'
 SEARCHING_LABEL = '&Searching...'
-PLAY_LABEL = '&Play'
-PAUSE_LABEL = '&Pause'
+PLAY_LABEL = 'Play'
+PAUSE_LABEL = 'Pause'
 
 class MainFrame(wx.Frame):
  """The main frame."""
@@ -119,6 +120,13 @@ class MainFrame(wx.Frame):
  def add_playlist(self, playlist):
   """Add playlist to the menu."""
   if playlist not in self.playlists:
+   tracks.storage.playlists.append(
+    {
+     'key': playlist.key,
+     'name': playlist.name,
+     'description': playlist.description
+    }
+   )
    id = wx.NewId()
    self.playlists[playlist] = id
    self.playlists_menu.add_playlist(playlist, id = id)
@@ -131,6 +139,12 @@ class MainFrame(wx.Frame):
  def add_station(self, station):
   """Add station to the menu."""
   if station not in self.stations:
+   tracks.storage.stations.append(
+    {
+     'key': station.key,
+     'name': station.name
+    }
+   )
    id = wx.NewId()
    delete_id = wx.NewId()
    self.stations[station] = [id, delete_id]
@@ -187,7 +201,19 @@ class MainFrame(wx.Frame):
     mode = 'Paused'
    else:
     mode = 'Playing'
-  super(MainFrame, self).SetTitle('%s - %s%s' % (application.name, title, ' [{}]'.format(mode) if mode is not None else ''))
+  title = '%s%s' % (title, ' [{}]'.format(mode) if mode is not None else '')
+  tracks.storage.now_playing = title
+  tracks.storage.previous = get_previous()
+  if tracks.storage.previous is None:
+   tracks.storage.previous = 'No Track'
+  else:
+   tracks.storage.previous = str(tracks.storage.previous)
+  tracks.storage.next = get_next()
+  if tracks.storage.next is None:
+   tracks.storage.next = 'No Track'
+  else:
+   tracks.storage.next = str(tracks.storage.next)
+  super(MainFrame, self).SetTitle('%s - %s' % (application.name, title))
  
  def load_result(self, result):
   """Load a result from a dictionary."""
@@ -195,7 +221,16 @@ class MainFrame(wx.Frame):
  
  def add_result(self, result):
   """Add a result to the view."""
-  self.view.Append(format_track(result))
+  session.add(result)
+  session.commit()
+  result_str = format_track(result)
+  tracks.storage.tracks.append(
+   {
+    'key': result.key,
+    'name': result_str
+   }
+  )
+  self.view.Append(result_str)
   self.results.append(result)
   if self.view.GetSelection() == -1:
    self.view.SetSelection(0)
@@ -210,10 +245,14 @@ class MainFrame(wx.Frame):
    showing = self.showing
   self.showing = showing
   if clear:
-   self.played = [] # Clear the played tracks queue.
    self.view.Clear()
-   self.results = []
-   self.autoload = []
+   for thing in [
+    self.played,
+    self.results,
+    tracks.storage.tracks,
+    self.autoload
+   ]:
+    thing.clear()
   for r in results:
    self.autoload.append(r)
   if focus:
@@ -224,6 +263,7 @@ class MainFrame(wx.Frame):
  def remove_result(self, result):
   """Remove a result given as a Track object or an integer."""
   if isinstance(result, Track):
+   tracks.storage.tracks.remove(result)
    pos = self.results.index(result)
    self.view.Delete(pos)
    del self.results[pos]
@@ -344,9 +384,19 @@ class MainFrame(wx.Frame):
  def update_labels(self):
   """Update the labels of the previous and next buttons."""
   prev = get_previous()
-  self.previous.SetLabel('&Previous' if prev is None else '&Previous (%s)' % prev)
+  prev = 'Previous' if prev is None else 'Previous (%s)' % prev
+  self.previous.SetLabel('&%s' % prev)
+  tracks.storage.previous = prev
   next = get_next(remove = False)
-  self.next.SetLabel('&Next' if next is None else '&Next (%s)' % next)
+  next = 'Next' if next is None else 'Next (%s)' % next
+  self.next.SetLabel('&%s' % next)
+  tracks.storage.next = next
+  if application.stream and application.stream.is_playing:
+   pp = PAUSE_LABEL
+  else:
+   pp = PLAY_LABEL
+  tracks.storage.play_pause = pp
+  self.play.SetLabel('&' + pp)
  
  def play_manager(self, event):
   """Manage the currently playing track."""
@@ -395,10 +445,9 @@ class MainFrame(wx.Frame):
   if application.stream:
    if application.stream.is_paused or application.stream.is_stopped:
     application.stream.play(application.stream.is_stopped)
-    self.play.SetLabel(PAUSE_LABEL)
    else:
     application.stream.pause()
-    self.play.SetLabel(PLAY_LABEL)
+   self.update_labels()
    self.SetTitle()
   else:
    wx.Bell()

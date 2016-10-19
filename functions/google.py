@@ -69,6 +69,8 @@ def delete_station(station):
   ids = application.api.delete_stations([station.id])
   if ids != [station.id]:
    do_error('Failed to delete the %s station.' % station.name)
+  from server import tracks
+  tracks.storage.stations.remove(station)
   session.delete(station)
   if station in application.frame.stations:
    id, delete_id = application.frame.stations[station]

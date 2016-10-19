@@ -57,6 +57,8 @@ def delete_playlist(playlist):
  """Delete a playlist."""
  try:
   if application.api.delete_playlist(playlist.id) == playlist.id:
+   from server import tracks
+   tracks.storage.playlists.remove(playlist)
    for e in playlist.entries:
     db.session.delete(e)
    db.session.delete(playlist)
