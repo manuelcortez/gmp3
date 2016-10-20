@@ -3,7 +3,7 @@
 import wx
 
 name = 'GMP3'
-__version__ = '4.0.0'
+__version__ = '4.1.0'
 url = 'https://github.com/chrisnorman7/gmp3'
 
 

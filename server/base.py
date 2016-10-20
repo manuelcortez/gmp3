@@ -14,7 +14,7 @@ from functools import wraps
 
 logger = logging.getLogger(__name__)
 
-environment = Environment(loader = loaders.FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')))
+environment = Environment(loader = loaders.FileSystemLoader(os.path.join('server', 'templates')))
 environment.globals['app_name'] = application.name
 environment.globals['app_version'] = application.__version__
 environment.globals['app_url'] = application.url
