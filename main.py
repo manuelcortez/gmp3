@@ -2,6 +2,8 @@
 
 if __name__ == '__main__':
  from default_argparse import parser
+ parser.add_argument('--server-host', default = '0.0.0.0', help = 'The host to run the HTTP server on')
+ parser.add_argument('--server_port', default = 4673, help = 'The port to run the HTTP server on')
  args = parser.parse_args()
  import logging
  logging.basicConfig(stream = args.log_file, level = args.log_level)
@@ -23,7 +25,7 @@ if __name__ == '__main__':
   application.frame.Maximize(True)
   from server.base import app
   from threading import Thread
-  Thread(target = app.run, args = ['0.0.0.0', 4673]).start()
+  Thread(target = app.run, args = [args.server_host, args.server_port, args.log_file]).start()
   application.app.MainLoop()
   from twisted.internet import reactor
   reactor.callFromThread(reactor.stop)

@@ -2,6 +2,9 @@
 
 import os.path, application, wx, config, logging
 from klein import Klein
+from twisted.python import log
+from twisted.web.server import Site
+from twisted.internet import reactor
 from jinja2 import Environment, loaders
 from json import dumps
 from db import Track
@@ -36,6 +39,11 @@ def render_template(name, *args, **kwargs):
 
 class App(Klein):
  """An app which doesn't let any unauthorized people in."""
+ def run(self, host, port, log_file):
+  """Start running the server on host:port."""
+  log.startLogging(log_file)
+  reactor.listenTCP(port, Site(self.resource()), interface=host)
+  reactor.run(False)
  def route(self, *args, **kwargs):
   logger.info('app.route(%r, %r).', args, kwargs)
   decorator = super(App, self).route(*args, **kwargs)

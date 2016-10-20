@@ -21,9 +21,30 @@ old_volume = 0
 {% raw %}
 playlist_template = $.templates("<h4><a href=\"javascript:$.get('/playlist/{{:key}}')\">{{if name}}{{>name}}{{else}}Untitled Playlist{{/if}}</a></h4><p>{{if description}}{{>description}}{{else}}No description available.{{/if}}</p>")
 station_template = $.templates("<li><a href=\"javascript:$.get('/station/{{:key}}')\">{{>name}}</a></li>")
-track_template = $.templates("<tr><td>{{>name}}</td><td><a href=\"javascript:$.get('/play_track/{{:key}}')\">Play</a></td><td><a href=\"javascript:$.get('/queue_track/{{:key}}')\">Queue</a></td></tr>")
+track_template_table = $.templates("<tr><td>{{>name}}</td><td><a href=\"javascript:$.get('/play_track/{{:key}}')\">Play</a></td><td><a href=\"javascript:$.get('/queue_track/{{:key}}')\">Queue</a></td></tr>")
+track_template_p = $.templates("<p>{{>name}} <a href=\"javascript:$.get('/play_track/{{:key}}')\">Play</a> <a href=\"javascript:$.get('/queue_track/{{:key}}')\">Queue</a></p>")
 {% endraw %}
 volume_pulse = null
+function draw_tracks(tracklist) {
+ var text = ""
+ if (tracklist === undefined) {
+  tracklist = old_tracks
+ }
+ if ($("#tracks_in_table").is(":checked")) {
+  template = track_template_table
+  text = "<table><tr><th>Name</th><th>Play</th><th>Queue</th></tr>"
+ } else {
+  template = track_template_p
+  text = ""
+ }
+ for (i = 0; i < tracklist.length; i++) {
+  text += template.render(tracklist[i])
+ }
+ if (template === track_template_table) {
+  text += "</table>"
+ }
+ $("#tracks").html(text)
+}
 $(document).ready(function(){
  $("#volume").focus(function() {
   volume_pulse = setInterval(function(){
@@ -52,6 +73,9 @@ $(document).ready(function(){
    playlists = data.playlists
    stations = data.stations
    tracks = data.tracks
+   if (tracks === undefined || tracks == null) {
+    tracks = []
+   }
    now_playing = data.now_playing
    previous = data.previous
    next = data.next
@@ -72,12 +96,7 @@ $(document).ready(function(){
     $("#stations").html(text)
    }
    if (has_changed(tracks, old_tracks)) {
-    var text = "<table><tr><th>Name</th><th>Play</th><th>Queue</th></tr>"
-    for (i = 0; i < tracks.length; i++) {
-     text += track_template.render(tracks[i])
-    }
-    text += '</table>'
-    $("#tracks").html(text)
+    draw_tracks(tracks)
    }
    if (now_playing != old_now_playing) {
     old_now_playing = now_playing
@@ -135,6 +154,7 @@ $(document).ready(function(){
 <p>Search: {{ form.search }}</p>
 <p><input type="submit" value="Search"></p>
 </form>
+<p><input type="checkbox" name="tracks in table" id="tracks_in_table" onchange="draw_tracks()" checked/><label for="tracks in table">Show the tracks in a table</label>.</p>
 <div id="tracks">
 </div>
 {% endblock %}
