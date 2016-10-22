@@ -19,10 +19,10 @@ old_next = null
 old_play_pause = null
 old_volume = 0
 {% raw %}
-playlist_template = $.templates("<h4><a href=\"javascript:$.get('/playlist/{{:key}}')\">{{if name}}{{>name}}{{else}}Untitled Playlist{{/if}}</a></h4><p>{{if description}}{{>description}}{{else}}No description available.{{/if}}</p>")
-station_template = $.templates("<li><a href=\"javascript:$.get('/station/{{:key}}')\">{{>name}}</a></li>")
-track_template_table = $.templates("<tr><td>{{>name}}</td><td><a href=\"javascript:$.get('/play_track/{{:key}}')\">Play</a></td><td><a href=\"javascript:$.get('/queue_track/{{:key}}')\">Queue</a></td></tr>")
-track_template_p = $.templates("<p>{{>name}} <a href=\"javascript:$.get('/play_track/{{:key}}')\">Play</a> <a href=\"javascript:$.get('/queue_track/{{:key}}')\">Queue</a></p>")
+playlist_template = $.templates("<h4><a class=\"playlist-link\" id=\"{{:key}}\">{{if name}}{{>name}}{{else}}Untitled Playlist{{/if}}</a></h4><p>{{if description}}{{>description}}{{else}}No description available.{{/if}}</p>")
+station_template = $.templates("<li><a class=\"station-link\" id=\"{{:key}}\">{{>name}}</a></li>")
+track_template_table = $.templates("<tr><td>{{>name}}</td><td><a class=\"track-play-link\" id=\"{{:key}}\">Play</a></td><td><a class=\"track-queue-link\" id=\"{{:key}}\">Queue</a></td></tr>")
+track_template_p = $.templates("<p>{{>name}} <a class=\"track-play-link\" id=\"{{:key}}\">Play</a> <a class=\"track-queue-link\" id=\"{{:key}}\">Queue</a></p>")
 {% endraw %}
 volume_pulse = null
 function draw_tracks(tracklist) {
@@ -44,8 +44,29 @@ function draw_tracks(tracklist) {
   text += "</table>"
  }
  $("#tracks").html(text)
+ $(".track-play-link").click(function() {
+  $.get("/play_track/" + this.id)
+ }).removeClass("track-play-link")
+ $(".track-queue-link").click(function() {
+  $.get("/queue_track/" + this.id)
+ }).removeClass("track-queue-link")
 }
 $(document).ready(function(){
+ $("#track_previous").click(function() {
+  $.get("/track/previous")
+ })
+ $("track_next").click(function() {
+  $.get("/track/next")
+ })
+ $("#play_pause").click(function() {
+  $.get("/track/play_pause")
+ })
+ $("#playlists-link").click(function() {
+  $("#playlists").toggle()
+ })
+ $("#stations-link").click(function() {
+  $("#stations").toggle()
+ })
  $("#volume").focus(function() {
   volume_pulse = setInterval(function(){
    if ($("#volume").val() != old_volume) {
@@ -87,6 +108,9 @@ $(document).ready(function(){
      text += playlist_template.render(playlists[i])
     }
     $("#playlists").html(text)
+    $(".playlist-link").click(function() {
+     $.get("/playlist/" + this.id)
+    }).removeClass("playlist-link")
    }
    if (has_changed(stations, old_stations)) {
     text = "<ul>"
@@ -94,6 +118,9 @@ $(document).ready(function(){
      text += station_template.render(stations[i])
     }
     $("#stations").html(text)
+    $(".station-link").click(function() {
+     $.get("/station/" + this.id)
+    }).click("station-link")
    }
    if (has_changed(tracks, old_tracks)) {
     draw_tracks(tracks)
@@ -130,8 +157,8 @@ $(document).ready(function(){
 <h2><div id="now_playing">Loading...</div></h2>
 <table>
 <tr>
-<td><input type="button" id="track_previous" onclick="$.get('/track/previous')" value="Previous"></td>
-<td><input type="button" id="play_pause" onclick="$.get('/track/play_pause')" value = "Play or Pause"></td>
+<td><input type="button" id="track_previous" value="Previous"></td>
+<td><input type="button" id="play_pause" value = "Play or Pause"></td>
 <td><input type="button" id="track_next" onclick="$.get('/track/next')" value="Next"></td>
 </tr>
 <tr>
@@ -140,11 +167,11 @@ $(document).ready(function(){
 <td><input type="button" onclick="$.get('/track/volume_up')" value="Volume Up"></td>
 </tr>
 </table>
-<h3><a href="javascript:$('#playlists').toggle();">Playlists</a></h3>
+<h3><a id="playlists-link">Playlists</a></h3>
 <div id="playlists">
 <p>Loading...</p>
 </div>
-<h3><a href="javascript:$('#stations').toggle()">Radio Stations</a></h3>
+<h3><a id="stations-link">Radio Stations</a></h3>
 <div id="stations">
 <p>Loading...</p>
 </div>
