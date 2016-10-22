@@ -58,7 +58,7 @@ def queue_track(request, id):
   }
  )
 
-@app.route('/info')
+@app.route('/info', protected = False)
 def get_info(request):
  """Get all the playlists, radio stations and tracks in the player."""
  return jsonify(

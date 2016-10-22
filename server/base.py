@@ -46,10 +46,16 @@ class App(Klein):
   reactor.run(False)
  def route(self, *args, **kwargs):
   logger.info('app.route(%r, %r).', args, kwargs)
+  try:
+   protected = kwargs['protected']
+   del kwargs['protected']
+  except KeyError:
+   protected = True
   decorator = super(App, self).route(*args, **kwargs)
   def f(func):
    """Also decorates func."""
-   logger.debug('Decorating %r.', func)
+   func.protected = protected
+   logger.debug('Decorating %s %r.', 'protected' if func.protected else 'unprotected', func)
    @wraps(func)
    def login_check(request, *args, **kwargs):
     """Check we're logged in."""
@@ -59,8 +65,11 @@ class App(Klein):
       username = username.decode()
      if hasattr(password, 'decode'):
       password = password.decode()
-     logger.debug('Checking credentials (%r, %r)...', username, password)
-     if username == config.config.http['uid'] and password == config.config.http['pwd']:
+     if func.protected:
+      logger.debug('Checking credentials (%r, %r)...', username, password)
+     else:
+      logger.info('View is unprotected, skipping authentication.')
+     if not func.protected or (username == config.config.http['uid'] and password == config.config.http['pwd']):
       logger.debug('Returning function %r.', func)
       return func(request, *args, **kwargs)
      else:
@@ -84,6 +93,7 @@ def not_found(request, failure):
  """404."""
  request.setResponseCode(404)
  return render_template('not_found.html', request = request)
+not_found.protected = False
 
 class DataHolder(object):
  """A way of getting around the multithreaded nature of GMP."""
@@ -114,6 +124,10 @@ def load_data(func):
 def home(request):
  """The main page."""
  return render_template('index.html', form = SearchForm())
+
+@app.route('/style.css', protected = False)
+def style(request):
+ return render_template('style.css')
 
 from . import tracks
 
