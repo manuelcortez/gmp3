@@ -44,6 +44,7 @@ class App(Klein):
   log.startLogging(log_file)
   reactor.listenTCP(port, Site(self.resource()), interface=host)
   reactor.run(False)
+ 
  def route(self, *args, **kwargs):
   logger.info('app.route(%r, %r).', args, kwargs)
   try:
