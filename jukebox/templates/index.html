@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block head %}
+<script>
+$(document).ready(function() {
+    $(".track-link").click(function() {
+        $.get("/queue_track/" + this.id)
+    })
+})
+</script>
+{% endblock %}
+{% block main %}
+<h2>Tracks</h2>
+<form action="/" method="post">
+{% for field in form %}
+<p>{{ field }}</p>
+{% endfor %}
+<p><input type="submit" value="Search"></p>
+</form>
+{% if settings.tracks %}
+<ul>
+{% for track in settings.tracks %}
+<li><a class="track-link" id="{{ track.id }}">{{ track|format_track }}</a></li>
+{% endfor %}
+</ul>
+{% else %}
+<p>First search for tracks.</p>
+{% endif %}
+{% endblock %}
