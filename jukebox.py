@@ -9,10 +9,17 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--port', type = int, default = 5853, help = 'The port to run the Jukebox on')
     parser.add_argument('-d', '--default-playlist', help = 'The playlist to play tracks from when nothing else is playing')
     parser.add_argument('-i', '--interval', type = float, default = 0.2, help = 'How often should the jukebox check the queue')
-    
+    parser.add_argument('-o', '--output-device', type = int, default = -1, help = 'The output device to use')
+    parser.add_argument('--list-devices', action = 'store_true', help = 'List output devices')
     parser.add_argument('username', nargs = '?', default = config.login['uid'], help = 'Your google username')
     parser.add_argument('password', nargs = '?', default = config.login['pwd'], help = 'Your Google password')
     args = parser.parse_args()
+    if args.list_devices:
+        print('Output devices:')
+        import application
+        for x, y in enumerate(application.output.get_device_names()):
+            print('[%d] %s.' % (x - 1, y))
+        raise SystemExit
     if not args.username:
         args.username = input('Enter your Google username: ')
     if not args.password:
@@ -44,6 +51,17 @@ if __name__ == '__main__':
             logging.warning('Nothing will be played when there are no items in the queue.')
         else:
             logging.info('When no tracks are queued, random tracks from the %s playlist will be played.', app.default.name)
+        import application
+        if args.output_device == -1:
+            application.output.set_device(application.output.find_default_device())
+        else:
+            from sound_lib.main import BassError
+            try:
+                application.output.set_device(args.output_device)
+            except BassError:
+                logging.critical('Invalid output device.')
+                raise SystemExit
+        logging.info('Using sound device %s.', application.output.get_device_names()[application.output.device - 1])
         from jukebox import pages
         logging.info('Loaded pages from %r.', pages)
         from twisted.internet.task import LoopingCall

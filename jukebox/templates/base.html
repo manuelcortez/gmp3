@@ -14,6 +14,6 @@
 <p><a href="/">Home</a> | <a href="/queue">View the queue</a></p>
 {% block main %}<! -- Body stuff goes here. -->{% endblock %}
 <hr>
-<p>Queue length: {% if duration %}{{ duration|format_timedelta }}{% else %}0 seconds{% endif %} ({{ app.queue|length }} {% if app.tracks|length == 1 %}track{% else %}tracks{% endif %}).</p>
+<p>Queue length: {% if duration %}{{ duration|format_timedelta }}{% else %}0 seconds{% endif %} ({{ app.queue|length }} {% if app.queue|length == 1 %}track{% else %}tracks{% endif %}).</p>
 </body>
 </html>
