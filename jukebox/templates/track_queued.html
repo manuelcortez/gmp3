@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title%}Track {% if queued %}already queued{% else %}{% if track %}queued{% else %}error{% endif %}{% endif%}{% endblock %}
+{% block main %}
+<h1>Queue A Track</h1>
+{% if track %}
+<h2>Result</h2>
+<p>{{ track }} was {% if queued %}already queued{% else %}added to the queue{% endif %}.</p>
+{% else %}
+<h2>ERROR</h2>
+<p>Invalid track ID provided.</p>
+{% endif %}
+<p><a href="/">OK</a></p>
+{% endblock %}

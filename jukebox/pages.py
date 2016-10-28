@@ -37,8 +37,15 @@ def queue_track(request, id):
     """Queue the requested track."""
     try:
         track = session.query(Track).filter(Track.id == id).one()
-        if track not in app.queue:
+        queued = track in app.queue
+        if not queued:
             app.queue.append(track)
     except NoResultFound:
-        pass # No worries.
-
+        track = None
+        queued = False
+    return render_template(
+        request,
+        'track_queued.html',
+        track = track,
+        queued = queued
+    )
