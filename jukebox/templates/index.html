@@ -10,12 +10,14 @@
 <p><input type="submit" value="Search"></p>
 </form>
 {% if settings.tracks %}
+<h3>Search Results</h3>
 <ul>
 {% for track in settings.tracks %}
 <li><a class="track-link" href="/queue_track/{{ track.id }}" id="{{ track.id }}">{{ track|format_track }}</a></li>
 {% endfor %}
 </ul>
 {% else %}
+<h3>No Tracks Yet</h3>
 <p>First search for tracks.</p>
 {% endif %}
 {% endblock %}

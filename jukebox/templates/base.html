@@ -9,6 +9,10 @@
 {% block head %}<!-- head things go here. -->{% endblock %}
 </head>
 <body>
+<h1>Welcome to the Jukebox</h1>
+<p><a href="/queue">View the queue</a></p>
 {% block main %}<! -- Body stuff goes here. -->{% endblock %}
+<hr>
+<p>Queue length: {% if duration %}{{ duration|format_timedelta }}{% else %}0 seconds{% endif %}.</p>
 </body>
 </html>

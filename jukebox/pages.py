@@ -29,8 +29,12 @@ def home(request):
         if search:
             results = api.search(search)
             results = [result['track'] for result in results.get('song_hits', [])]
-            ISettings(request.getSession()).tracks = list_to_objects(results)
-    return render_template(request, 'index.html', form = form)
+            ISettings(request.getSession()).tracks = list(list_to_objects(results))
+    return render_template(
+        request,
+        'index.html',
+        form = form
+    )
 
 @app.route('/queue_track/<id>')
 def queue_track(request, id):
@@ -49,3 +53,8 @@ def queue_track(request, id):
         track = track,
         queued = queued
     )
+
+@app.route('/queue')
+def queue(request):
+    """Show the queue."""
+    return render_template(request, 'queue.html')
