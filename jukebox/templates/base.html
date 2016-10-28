@@ -10,9 +10,10 @@
 </head>
 <body>
 <h1>Welcome to the Jukebox</h1>
-<p><a href="/queue">View the queue</a></p>
+<h2>{% if app.track %}Now playing: {{ app.track }}{% else %}Nothing playing{% endif %}</h2>
+<p><a href="/">Home</a> | <a href="/queue">View the queue</a></p>
 {% block main %}<! -- Body stuff goes here. -->{% endblock %}
 <hr>
-<p>Queue length: {% if duration %}{{ duration|format_timedelta }}{% else %}0 seconds{% endif %}.</p>
+<p>Queue length: {% if duration %}{{ duration|format_timedelta }}{% else %}0 seconds{% endif %} ({{ app.queue|length }} {% if app.tracks|length == 1 %}track{% else %}tracks{% endif %}).</p>
 </body>
 </html>

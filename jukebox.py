@@ -8,6 +8,8 @@ if __name__ == '__main__':
     parser.add_argument('--host', default = '0.0.0.0', help = 'The interface on which to run the web server')
     parser.add_argument('-p', '--port', type = int, default = 5853, help = 'The port to run the Jukebox on')
     parser.add_argument('-d', '--default-playlist', help = 'The playlist to play tracks from when nothing else is playing')
+    parser.add_argument('-i', '--interval', type = float, default = 0.2, help = 'How often should the jukebox check the queue')
+    
     parser.add_argument('username', nargs = '?', default = config.login['uid'], help = 'Your google username')
     parser.add_argument('password', nargs = '?', default = config.login['pwd'], help = 'Your Google password')
     args = parser.parse_args()
@@ -46,7 +48,9 @@ if __name__ == '__main__':
         logging.info('Loaded pages from %r.', pages)
         from twisted.internet.task import LoopingCall
         loop = LoopingCall(play_manager)
-        loop.start(0.9)
+        args.interval = abs(args.interval)
+        logging.info('Checking the queue every %.2f seconds.', args.interval)
+        loop.start(args.interval)
         app.run(args.host, args.port, logFile = args.log_file)
     else:
         logging.critical('Login failed.')
