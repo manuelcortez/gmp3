@@ -208,7 +208,7 @@ class MainFrame(wx.Frame):
    tracks.storage.previous = 'No Track'
   else:
    tracks.storage.previous = str(tracks.storage.previous)
-  tracks.storage.next = get_next()
+  tracks.storage.next = get_next(remove = False)
   if tracks.storage.next is None:
    tracks.storage.next = 'No Track'
   else:
