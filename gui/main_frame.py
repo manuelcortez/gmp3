@@ -12,6 +12,7 @@ from config import save, config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
+from sound_lib.main import BassError
 from lyricscraper.lyrics import Lyrics
 from functions.network import get_lyrics
 from functions.util import do_login, do_error, format_track, format_timedelta, load_playlist, load_station, clean_library
@@ -377,7 +378,10 @@ class MainFrame(wx.Frame):
   if res is None:
    wx.Bell()
   else:
-   play(res)
+   try:
+    play(res)
+   except BassError as e:
+    do_error(e)
    if config.interface['clear_queue']:
     self.queue = []
  
