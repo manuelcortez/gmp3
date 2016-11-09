@@ -3,6 +3,10 @@ Google Music Player (GMP) written inPython 3 with loads of new features.
 
 ---
 
+If you are looking for the Jukebox version, you need to head to [http://github.com/chrisnorman7/jukebox.git](this page).
+
+---
+
 ## Installation
 It is worth noting that there are some problems using GMP on Linux, and I still haven't tracked down the exact causes.
 
