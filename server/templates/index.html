@@ -84,7 +84,7 @@ $(document).ready(function(){
   search = $("#search").prop("value")
   if (search) {
    $("#search").prop("value", "")
-   $.get("/search/" + search)
+   $.get(encodeURI("/search/" + search))
   } else {
    alert("You must enter something to search for.")
   }
