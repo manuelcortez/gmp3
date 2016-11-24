@@ -264,10 +264,14 @@ class MainFrame(wx.Frame):
  def remove_result(self, result):
   """Remove a result given as a Track object or an integer."""
   if isinstance(result, Track):
-   tracks.storage.tracks.remove(result)
-   pos = self.results.index(result)
-   self.view.Delete(pos)
-   del self.results[pos]
+   if result in tracks.storage.tracks:
+    tracks.storage.tracks.remove(result)
+   try:
+    pos = self.results.index(result)
+    self.view.Delete(pos)
+    del self.results[pos]
+   except IndexError:
+    pass # result not in self.results.
   elif isinstance(result, int):
    self.view.Delete(result)
    del self.results[result]
