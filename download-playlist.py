@@ -75,7 +75,8 @@ if res:
  logging.info('Started the download at %s.', ctime(program_start))
  total = 0.0 # The average download time.
  try:
-  for i, r in enumerate(res()):
+  results = res()
+  for i, r in enumerate(results):
    logging.debug('Result = %s', r)
    artist = valid_filename(r.get('artist', 'Unknown Artist'))
    album = valid_filename(r.get('album', 'Unknown Album'))
@@ -97,7 +98,7 @@ if res:
    if args.wait:
     print('Waiting %.2f seconds between tracks.' % args.wait)
     sleep(args.wait)
-   print(u'[%s] Downloading %s - %s to %s.' % (i, artist, title, filename))
+   print(u'[%d/%d] Downloading %s - %s to %s.' % (i + 1, len(results), artist, title, filename))
    start = time()
    logging.debug('Started download at %s.', ctime(start))
    try:
