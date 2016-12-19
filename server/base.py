@@ -41,6 +41,8 @@ class App(Klein):
  """An app which doesn't let any unauthorized people in."""
  def run(self, host, port, log_file):
   """Start running the server on host:port."""
+  self.host = host
+  self.port = port
   log.startLogging(log_file)
   reactor.listenTCP(port, Site(self.resource()), interface=host)
   reactor.run(False)
