@@ -152,6 +152,8 @@ def get_next(remove = True):
  else:
   if hasattr(application.frame, 'shuffle') and application.frame.shuffle.IsChecked():
    if remove:
+    if len(application.frame.played) == len(application.frame.results):
+     application.frame.played.clear()
     t = choice([x for x in application.frame.results if x not in application.frame.played])
     application.frame.played.append(t)
     return t
