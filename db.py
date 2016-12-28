@@ -138,7 +138,7 @@ def to_object(item):
  except exc.NoResultFound:
   track = Track()
   track.populate(item)
- session.add(track)
+  session.add(track)
  return track
 
 def list_to_objects(l):
