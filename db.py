@@ -1,6 +1,7 @@
 """Database specifics."""
 
 import os.path, application, config
+from attrs_sqlalchemy import attrs_sqlalchemy
 from sqlalchemy import create_engine, Column, Table, ForeignKey, String, Boolean, Integer, Interval, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, exc
@@ -28,6 +29,7 @@ playlist_tracks = Table('playlist_tracks',
  Column('track_key', Integer(), ForeignKey('tracks.key'))
 )
 
+@attrs_sqlalchemy
 class Artist(Base):
  __tablename__ = 'artists'
  key = Column(Integer(), primary_key = True)
@@ -44,6 +46,7 @@ class Artist(Base):
  def __str__(self):
   return '<Unloaded>' if self.name is None else self.name
 
+@attrs_sqlalchemy
 class Track(Base):
  __tablename__ = 'tracks'
  key = Column(Integer(), primary_key = True)
@@ -148,6 +151,7 @@ def list_to_objects(l):
 
 config.config.interface.result_format.title = 'Track &Format (Possible Formatters: %s)' % ', '.join([x for x in dir(Track) if not x.startswith('_')])
 
+@attrs_sqlalchemy
 class Playlist(Base):
  __tablename__ = 'playlists'
  key = Column(Integer(), primary_key = True)
@@ -156,6 +160,7 @@ class Playlist(Base):
  description = Column(String(length = 10000), nullable = False)
  tracks = relationship('Track', secondary = playlist_tracks)
 
+@attrs_sqlalchemy
 class PlaylistEntry(Base):
  __tablename__ = 'playlist_entries'
  key = Column(Integer(), primary_key = True)
@@ -165,6 +170,7 @@ class PlaylistEntry(Base):
  track_id = Column(Integer(), ForeignKey('tracks.key'))
  track = relationship('Track', backref = 'playlist_entries')
 
+@attrs_sqlalchemy
 class Station(Base):
  __tablename__ = 'stations'
  key = Column(Integer(), primary_key = True)
