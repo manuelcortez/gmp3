@@ -73,7 +73,9 @@ class MainFrame(wx.Frame):
   vs.Add(wx.StaticText(p, label = '&Tracks'), 0, wx.GROW)
   self.view = wx.ListBox(p)
   add_accelerator(self.view, 'RETURN', self.on_activate)
+  self.view.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.on_activate)
   add_accelerator(self.view, 'SPACE', self.play_pause)
+  self.view.Bind(wx.EVT_LISTBOX_DCLICK, self.on_activate)
   self.view.SetFocus()
   self.view.Bind(wx.EVT_CONTEXT_MENU, self.on_context)
   if sys.platform == 'darwin':
