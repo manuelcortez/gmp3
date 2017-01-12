@@ -104,7 +104,7 @@ class MainFrame(wx.Frame):
   add_accelerator(self, 'SHIFT+RIGHT', self.fastforward)
   self.position_timer = wx.Timer(self)
   self.Bind(wx.EVT_TIMER, self.play_manager, self.position_timer)
-  self.position_timer.Start(10)
+  self.position_timer.Start(50)
   s.AddMany([
    (s1, 0, wx.GROW),
    (s2, 1, wx.GROW),
