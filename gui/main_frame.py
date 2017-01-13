@@ -21,6 +21,7 @@ from functions.sound import play, get_previous, get_next, set_volume, seek, seek
 from lyrics import LocalEngine
 from .menus.context import ContextMenu
 from .edit_playlist_frame import EditPlaylistFrame
+from .lyrics_frame import LyricsFrame
 
 logger = logging.getLogger(__name__)
 SEARCH_LABEL = '&Find'
@@ -119,7 +120,7 @@ class MainFrame(wx.Frame):
   self.status = self.CreateStatusBar()
   self.status.SetStatusText('Nothing playing yet')
   add_accelerator(self, 'CTRL+R', self.cycle_repeat)
- 
+
  def add_playlist(self, playlist):
   """Add playlist to the menu."""
   if playlist not in self.playlists:
@@ -138,7 +139,7 @@ class MainFrame(wx.Frame):
   else:
    logger.info('Playlist %s already had an id of %s.', playlist.name, self.playlists[playlist])
    return False
- 
+
  def add_station(self, station):
   """Add station to the menu."""
   if station not in self.stations:
@@ -157,7 +158,7 @@ class MainFrame(wx.Frame):
   else:
    logger.info('Station %s already has an id of %s and a delete id of %s.', station.name, *self.stations[station])
    return False
- 
+
  def edit_playlist(self, event):
   """Delete a playlist from the local database."""
   playlists = list(self.playlists.keys())
@@ -165,7 +166,7 @@ class MainFrame(wx.Frame):
   if dlg.ShowModal() == wx.ID_OK:
    EditPlaylistFrame(playlists[dlg.GetSelection()]).Show(True)
   dlg.Destroy()
- 
+
  def on_show(self, event):
   """Show the window."""
   if not self.initialised:
@@ -190,7 +191,7 @@ class MainFrame(wx.Frame):
    for s in session.query(Station).order_by(Station.name.desc()).all():
     self.add_station(s)
    set_volume(config.system['volume'])
- 
+
  def SetTitle(self):
   """Set the title to something."""
   if application.stream is None:
@@ -217,11 +218,11 @@ class MainFrame(wx.Frame):
   else:
    tracks.storage.next = str(tracks.storage.next)
   super(MainFrame, self).SetTitle('%s - %s' % (application.name, title))
- 
+
  def load_result(self, result):
   """Load a result from a dictionary."""
   self.add_result(to_object(result))
- 
+
  def add_result(self, result):
   """Add a result to the view."""
   session.add(result)
@@ -237,11 +238,11 @@ class MainFrame(wx.Frame):
   self.results.append(result)
   if self.view.GetSelection() == -1:
    self.view.SetSelection(0)
- 
+
  def load_results(self, results, *args, **kwargs):
   """Given a list of tracks results, load them into the database and then into add_results along with args and kwargs."""
   self.add_results(list_to_objects(results), *args, **kwargs)
- 
+
  def add_results(self, results, clear = True, focus = True, showing = None):
   """Add results to the view."""
   if showing is None:
@@ -262,7 +263,7 @@ class MainFrame(wx.Frame):
    self.view.SetFocus()
   if clear:
    self.update_labels()
- 
+
  def remove_result(self, result):
   """Remove a result given as a Track object or an integer."""
   if isinstance(result, Track):
@@ -279,7 +280,7 @@ class MainFrame(wx.Frame):
    del self.results[result]
   else:
    return TypeError('result must be given as either a Track object or an integer.')
- 
+
  def update_status(self):
   """Update the text on the status bar."""
   if isinstance(self.showing, string_types):
@@ -307,7 +308,7 @@ class MainFrame(wx.Frame):
     duration = format_timedelta(duration)
    )
   )
- 
+
  def load_library(self):
   """Load all the songs from the Google Music library."""
   try:
@@ -315,7 +316,7 @@ class MainFrame(wx.Frame):
    wx.CallAfter(self.add_results, lib, showing = showing.SHOWING_LIBRARY)
   except NotLoggedIn:
    wx.CallAfter(do_login, callback = self.load_library)
- 
+
  def load_promoted_songs(self):
   """Load promoted songs from Google."""
   try:
@@ -323,7 +324,7 @@ class MainFrame(wx.Frame):
    wx.CallAfter(self.load_results, songs, showing = showing.SHOWING_PROMOTED)
   except NotLoggedIn:
    wx.CallAfter(do_login, callback = self.load_promoted_songs)
- 
+
  def do_remote_search(self, what):
   """Perform a searchon Google Play Music for what."""
   def f(what):
@@ -345,7 +346,7 @@ class MainFrame(wx.Frame):
    wx.CallAfter(f2, results)
   self.search_label.SetLabel(SEARCHING_LABEL)
   Thread(target = f, args = [what]).start()
- 
+
  def do_local_search(self, what):
   """Perform a local search for what."""
   what = '%%%s%%' % self.search.GetValue()
@@ -357,7 +358,7 @@ class MainFrame(wx.Frame):
    )
   ).all()
   self.add_results(results, showing = showing.SHOWING_SEARCH_LOCAL)
- 
+
  def on_close(self, event):
   """Close the window."""
   self.tb_icon.Destroy()
@@ -377,7 +378,7 @@ class MainFrame(wx.Frame):
   logger.info('Cleaning the media directory.')
   clean_library()
   logger.info('Library cleaned.')
- 
+
  def on_activate(self, event):
   """Enter was pressed on a track."""
   res = self.get_result()
@@ -390,7 +391,7 @@ class MainFrame(wx.Frame):
     do_error(e)
    if config.interface['clear_queue']:
     self.queue = []
- 
+
  def update_labels(self):
   """Update the labels of the previous and next buttons."""
   prev = get_previous()
@@ -407,7 +408,7 @@ class MainFrame(wx.Frame):
    pp = PLAY_LABEL
   tracks.storage.play_pause = pp
   self.play.SetLabel('&' + pp)
- 
+
  def play_manager(self, event):
   """Manage the currently playing track."""
   while self.commands:
@@ -449,7 +450,7 @@ class MainFrame(wx.Frame):
     play(n)
   else:
    self.position.SetValue(0)
- 
+
  def play_pause(self, event):
   """Play or pause the current track."""
   if application.stream:
@@ -461,7 +462,7 @@ class MainFrame(wx.Frame):
    self.SetTitle()
   else:
    wx.Bell()
- 
+
  def on_context(self, event):
   """Context menu for tracks view."""
   res = self.get_result()
@@ -471,15 +472,15 @@ class MainFrame(wx.Frame):
    menu = ContextMenu(res)
    self.PopupMenu(menu, wx.GetMousePosition())
    menu.Destroy()
- 
+
  def on_previous(self, event):
   """Play the previous track."""
   play(get_previous())
- 
+
  def on_next(self, event):
   """Play the next track."""
   play(get_next(remove = True))
- 
+
  def rewind(self, event):
   """Rewind the current track."""
   if self.view.HasFocus():
@@ -489,7 +490,7 @@ class MainFrame(wx.Frame):
     wx.Bell()
   else:
    event.Skip()
- 
+
  def fastforward(self, event):
   """Fastforward the currently playing stream."""
   if self.view.HasFocus():
@@ -499,7 +500,7 @@ class MainFrame(wx.Frame):
     wx.Bell()
   else:
    event.Skip()
- 
+
  def load_remote_station(self, event):
   """Load a station from google."""
   try:
@@ -515,14 +516,14 @@ class MainFrame(wx.Frame):
    dlg.Destroy()
   except NotLoggedIn:
    do_login(callback = self.load_remote_station, args = [event])
- 
+
  def load_station(self, station):
   """Load a station's tracks."""
   try:
    wx.CallAfter(self.add_results, application.api.get_station_tracks(station.id), showing = station)
   except NotLoggedIn:
    do_login(callback = self.load_station, args = [station])
- 
+
  def load_current_album(self, event):
   """Load the album of the currently focused result."""
   res = self.get_result()
@@ -537,12 +538,12 @@ class MainFrame(wx.Frame):
     except NotLoggedIn:
      do_login(callback = f, args = [id])
    Thread(target = f, args = [res.album_id]).start()
- 
+
  def get_result(self):
   """Return the currently focused result."""
   if self.view.GetSelection() != -1:
    return self.results[self.view.GetSelection()]
- 
+
  def load_artist_tracks(self, event):
   """Load the tracks for the currently focused result."""
   res = self.get_result()
@@ -550,7 +551,7 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    artist_action(res.artists, load_artist_tracks)
- 
+
  def load_top_tracks(self, event):
   """Load the top tracks for the artist of the currently selected track."""
   res = self.get_result()
@@ -558,7 +559,7 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    artist_action(res.artists, load_artist_top_tracks)
- 
+
  def load_related_artist(self, event):
   """Load the tracks of a related artist."""
   def f1(artist):
@@ -595,7 +596,7 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    artist_action(res.artists, f1)
- 
+
  def cycle_repeat(self, event):
   """Cycle through repeat modes."""
   if self.repeat_off.IsChecked():
@@ -613,7 +614,7 @@ class MainFrame(wx.Frame):
   config.system['repeat'] = value
   logger.info('Set repeat mode to %s.' % mode)
   self.tb_icon.notify('Repeat %s.' % mode)
- 
+
  def do_stop(self, event):
   """Stop the currently playing track."""
   if application.stream:
@@ -622,7 +623,7 @@ class MainFrame(wx.Frame):
    application.stream.set_position(0)
   else:
    wx.Bell()
- 
+
  def toggle_library(self, event):
   """Add or remove the currently selected track from the library."""
   res = self.get_result()
@@ -635,7 +636,7 @@ class MainFrame(wx.Frame):
    else:
     add_to_library(res)
     wx.MessageBox('%s was added to your library.' % res, 'Added')
- 
+
  def load_album(self, event):
   """Load an album from the currently selected artist."""
   do_login()
@@ -648,7 +649,7 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    artist_action(res.artists, lambda artist: album_action(artist, f))
- 
+
  def select_playing(self, event):
   """Select the currently playing track."""
   res = application.track
@@ -659,7 +660,7 @@ class MainFrame(wx.Frame):
   else:
    self.add_results([res], showing = 'Currently Playing Track')
   self.view.SetFocus()
- 
+
  def update_lyrics(self, track):
   """Update the lyrics view."""
   def f(track, lyrics):
@@ -696,7 +697,7 @@ class MainFrame(wx.Frame):
     lyrics = None
   if track is not None:
    wx.CallAfter(f, track, lyrics)
- 
+
  def do_delete(self, event):
   """Delete the current result from the current view."""
   res = self.get_result()
@@ -717,11 +718,19 @@ class MainFrame(wx.Frame):
     do_error('Cannot find %s in the %s playlist.' % (res, self.showing.name))
   else:
    do_error('No way to delete %s from the current view.' % res)
- 
+
  def do_copy_id(self, track):
   """Copy the ID of the current track to the clipboard."""
   pyperclip.copy(track.id)
- 
+
  def add_command(self, callback, *args, **kwargs):
   """Add a command to be called by play_manager."""
   self.commands.append(partial(callback, *args, **kwargs))
+
+ def edit_lyrics(self, event):
+  """Edit the lyrics for the currently-playing track."""
+  res = self.get_result()
+  if res is None:
+   wx.Bell()
+  else:
+   LyricsFrame(res)
