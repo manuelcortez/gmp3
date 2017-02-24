@@ -731,7 +731,11 @@ class MainFrame(wx.Frame):
 
  def do_copy_id(self, track):
   """Copy the ID of the current track to the clipboard."""
-  pyperclip.copy(track.id)
+  if isinstance(track, URLStream):
+   text = track.url
+  else:
+   text = track.id
+  pyperclip.copy(text)
 
  def add_command(self, callback, *args, **kwargs):
   """Add a command to be called by play_manager."""

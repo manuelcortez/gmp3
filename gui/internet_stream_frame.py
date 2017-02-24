@@ -1,8 +1,9 @@
 """Provides the InternetStreamFrame class."""
 
-import wx, logging
+import wx, logging, application
 from wx.lib.sized_controls import SizedFrame
 from db import URLStream, session
+from showing import SHOWING_STREAMS
 from functions.util import do_error
 
 logger = logging.getLogger(__name__)
@@ -45,5 +46,7 @@ class InternetStreamFrame(SizedFrame):
    self.stream.url = url
    session.add(self.stream)
    session.commit()
+   if application.frame.showing is SHOWING_STREAMS and self.stream not in application.frame.results:
+    application.frame.add_result(self.stream)
    logger.info('Committed %r.', self.stream)
    self.Close(True)
