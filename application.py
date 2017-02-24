@@ -4,6 +4,7 @@ import wx
 
 name = 'GMP3'
 __version__ = '4.3.0'
+db_version = 1
 url = 'https://github.com/chrisnorman7/gmp3'
 
 

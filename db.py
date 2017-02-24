@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship, sessionmaker, exc
 from datetime import timedelta
 from functions.util import format_timedelta
 
-engine = create_engine('%s.%s' % (config.config.db['url'], application.__version__), echo = config.config.db['echo'])
+engine = create_engine('%s.%d' % (config.config.db['url'], application.db_version), echo = config.config.db['echo'])
 Base = declarative_base(bind = engine)
 Session = sessionmaker(bind = engine)
 session = Session()
