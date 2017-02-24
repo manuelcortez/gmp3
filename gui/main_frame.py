@@ -457,7 +457,7 @@ class MainFrame(wx.Frame):
 
  def play_pause(self, event):
   """Play or pause the current track."""
-  if application.stream:
+  if application.stream is not None:
    if application.stream.is_paused or application.stream.is_stopped:
     application.stream.play(application.stream.is_stopped)
    else:
@@ -488,8 +488,11 @@ class MainFrame(wx.Frame):
  def rewind(self, event):
   """Rewind the current track."""
   if self.view.HasFocus():
-   if application.stream:
-    seek(seek_amount * -1)
+   if application.stream is not None:
+    try:
+     seek(seek_amount * -1)
+    except BassError as e:
+     do_error(e)
    else:
     wx.Bell()
   else:
@@ -498,8 +501,11 @@ class MainFrame(wx.Frame):
  def fastforward(self, event):
   """Fastforward the currently playing stream."""
   if self.view.HasFocus():
-   if application.stream:
-    seek(seek_amount)
+   if application.stream is not None:
+    try:
+     seek(seek_amount)
+    except BassError as e:
+     do_error(e)
    else:
     wx.Bell()
   else:
@@ -621,7 +627,7 @@ class MainFrame(wx.Frame):
 
  def do_stop(self, event):
   """Stop the currently playing track."""
-  if application.stream:
+  if application.stream is not None:
    application.stream.stop()
    self.SetTitle()
    application.stream.set_position(0)
