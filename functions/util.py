@@ -76,7 +76,10 @@ def delete_playlist(playlist):
 
 def format_track(track):
  """Return track printed as the user likes."""
- return config.interface['result_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})
+ if isinstance(track, db.URLStream):
+  return '{0.name} ({0.url})'.format(track)
+ else:
+  return config.interface['result_format'].format(**{x: getattr(track, x) for x in dir(track) if not x.startswith('_')})
 
 def load_station(station):
  """Return a Station object from a dictionary."""

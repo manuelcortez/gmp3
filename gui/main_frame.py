@@ -7,7 +7,7 @@ from six import string_types
 from wxgoodies.keys import add_accelerator, add_hotkey
 from datetime import timedelta
 from server import tracks
-from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist
+from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist, URLStream
 from config import save, config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
@@ -100,7 +100,7 @@ class MainFrame(wx.Frame):
   s3.Add(self.volume, 1, wx.GROW)
   s3.Add(wx.StaticText(p, label = '&Position'), 0, wx.GROW)
   self.position= wx.Slider(p, style = wx.SL_HORIZONTAL)
-  self.position.Bind(wx.EVT_SLIDER, lambda event: application.stream.set_position((int(application.stream.get_length() / 100) * self.position.GetValue())) if application.stream else None)
+  self.position.Bind(wx.EVT_SLIDER, lambda event: application.stream.set_position((int(application.stream.get_length() / 100) * self.position.GetValue())) if not isinstance(application.track, URLStream) and application.stream else None)
   add_accelerator(self, 'SHIFT+LEFT', self.rewind)
   add_accelerator(self, 'SHIFT+RIGHT', self.fastforward)
   self.position_timer = wx.Timer(self)
@@ -298,7 +298,8 @@ class MainFrame(wx.Frame):
   percentage = '%.2f' % (100 / total * loaded)
   duration = timedelta()
   for r in self.results:
-   duration += r.duration
+   if isinstance(r, Track):
+    duration += r.duration
   self.status.SetStatusText(
    config.interface['status_bar_format'].format(
     text = text,
@@ -366,7 +367,7 @@ class MainFrame(wx.Frame):
   logger.info('Main frame closed.')
   self.position_timer.Stop()
   logger.info('Stopped the main timer.')
-  if application.stream:
+  if application.stream is not None:
    application.stream.stop()
    logger.info('Stopped the currently playing stream.')
   else:
@@ -402,7 +403,7 @@ class MainFrame(wx.Frame):
   next = 'Next' if next is None else 'Next (%s)' % next
   self.next.SetLabel('&%s' % next)
   tracks.storage.next = next
-  if application.stream and application.stream.is_playing:
+  if application.stream is not None and application.stream.is_playing:
    pp = PAUSE_LABEL
   else:
    pp = PLAY_LABEL
@@ -433,12 +434,15 @@ class MainFrame(wx.Frame):
    else:
     self.add_result(t)
    self.update_status()
-  if application.stream:
+  if application.stream is not None:
    try:
     pos = application.stream.get_position()
    except AssertionError:
     pos = 0.0
-   length = application.stream.get_length()
+   try:
+    length = application.stream.get_length()
+   except BassError:
+    length = pos * 2  # It's an internet stream.
    if not self.position.HasFocus() and length:
     self.position.SetValue(int(pos * (100 / length)))
    stop_after = self.stop_after.IsChecked()

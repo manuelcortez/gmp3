@@ -37,12 +37,12 @@ class Artist(Base):
  name = Column(String(length = 200), nullable = True)
  bio = Column(String(length = 10000), nullable = True)
  tracks = relationship('Track', secondary = artist_tracks)
- 
+
  def populate(self, d):
   """Load data from a dictionary d."""
   self.name = d.get('name', 'Unknown Artist')
   self.bio = d.get('artistBio')
- 
+
  def __str__(self):
   return '<Unloaded>' if self.name is None else self.name
 
@@ -73,32 +73,32 @@ class Track(Base):
  track_number = Column(Integer(), nullable = False)
  track_type = Column(String(length = 5), nullable = False)
  year = Column(Integer(), nullable = False)
- 
+
  @property
  def in_library(self):
   """Return True if this track is in the google library."""
   return not self.id.startswith('T')
- 
+
  @property
  def length(self):
   """Return the duration in the proper format."""
   return format_timedelta(self.duration)
- 
+
  @property
  def path(self):
   """Return an appropriate path for this result."""
   return os.path.join(config.config.storage['media_dir'], self.id + '.mp3')
- 
+
  @property
  def downloaded(self):
   """Return whether or not this track is downloaded."""
   return os.path.isfile(self.path)
- 
+
  @property
  def number(self):
   """Return the track number, padded with 0's."""
   return '%s%s' % ('0' if self.track_number is not None and self.track_number < 10 else '', self.track_number)
- 
+
  def populate(self, d):
   """Populate from a dictionary d."""
   self.album = d.get('album', 'Unknown Album')
@@ -130,7 +130,7 @@ class Track(Base):
   self.track_number = d.get('trackNumber', 1)
   self.track_type = d['trackType']
   self.year = d.get('year', 1)
- 
+
  def __str__(self):
   return '{0.artist} - {0.title}'.format(self)
 
@@ -176,3 +176,14 @@ class Station(Base):
  key = Column(Integer(), primary_key = True)
  id = Column(String(length = 30), nullable = False)
  name = Column(String(length = 500), nullable = False)
+
+@attrs_sqlalchemy
+class URLStream(Base):
+ """A URL stream, like an internet radio station."""
+ __tablename__ = 'urls'
+ key = Column(Integer(), primary_key = True)
+ name = Column(String(50), nullable=False)
+ url = Column(String(500), nullable=False)
+
+ def __str__(self):
+  return self.name

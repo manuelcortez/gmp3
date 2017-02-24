@@ -3,7 +3,7 @@
 import webbrowser, wx, showing, application
 from threading import Thread
 from gmusicapi.exceptions import CallFailure, NotLoggedIn
-from db import session, Track
+from db import session, Track, URLStream
 from config import config
 from functions.util import do_login, do_error
 from .base import BaseMenu
@@ -23,6 +23,7 @@ class SourceMenu(BaseMenu):
   parent.Bind(wx.EVT_MENU, lambda event: application.frame.add_results([x for x in session.query(Track).all() if x.downloaded is True], showing = showing.SHOWING_DOWNLOADED), self.Append(wx.ID_ANY, '&Downloaded\tCTRL+D', 'Show all downloaded tracks.'))
   self.AppendSubMenu(parent.playlists_menu if parent is application.frame else PlaylistsMenu(parent), '&Playlists', 'Select a local or remote playlist to view.')
   self.AppendSubMenu(parent.stations_menu if parent is application.frame else StationsMenu(parent), '&Radio Stations', 'Locally stored and remote radio stations.')
+  parent.Bind(wx.EVT_MENU, lambda event: application.frame.add_results(session.query(URLStream), showing=showing.SHOWING_STREAMS), self.Append(wx.ID_ANY, '&Internet Streams\tCTRL+I', 'Show all internet streams.'))
   parent.Bind(wx.EVT_MENU, lambda event: setattr(application.frame, 'autoload', [application.frame.autoload[0]] if application.frame.autoload else []), self.Append(wx.ID_ANY, 'St&op Loading Results', 'Stop loading results to the track view.'))
   parent.Bind(wx.EVT_MENU, self.load_track, self.Append(wx.ID_ANY, 'Load Specific Track...\tCTRL+SHIFT+I', 'Load a track with a specific ID.'))
   parent.Bind(wx.EVT_MENU, lambda event: webbrowser.open('http://%s:%s@localhost:%d' % (config.http['uid'], config.http['pwd'], app.port)) if config.http['enabled'] else do_error('The web server is not running. Enable it and restart GMP.'), self.Append(wx.ID_ANY, '&Web Interface...', 'Load the web interface.'))

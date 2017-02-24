@@ -1,6 +1,6 @@
 """Sound-related functions."""
 
-import application, logging
+import application, logging, db
 from threading import Thread
 from math import pow
 from datetime import datetime
@@ -91,8 +91,10 @@ class PygletFileStream(object):
 def play(track, immediately_play = True):
  """Play a track."""
  if track is not None:
-  if track is application.track and application.stream:
+  if track is application.track and application.stream is not None:
    stream = application.stream
+  elif isinstance(track, db.URLStream):
+   stream = URLStream(track.url.encode())
   elif not track.downloaded:
    try:
     url = application.api.get_stream_url(track.id)
@@ -116,7 +118,8 @@ def play(track, immediately_play = True):
      return do_error('Error playing track %s: %s' % (track, e))
    else:
     stream = FileStream(file = track.path)
-  track.last_played = datetime.now()
+  if not isinstance(track, db.URLStream):
+   track.last_played = datetime.now()
   if stream is not application.stream and application.stream is not None:
    if config.sound['pyglet']:
     application.stream.pause()
@@ -132,7 +135,7 @@ def play(track, immediately_play = True):
  else:
   track = None
   stream = None
- if application.track is not track:
+ if application.track is not track and not isinstance(track, db.URLStream):
   Thread(target = application.frame.update_lyrics, args = [track]).start()
  application.track = track
  application.stream = stream
@@ -187,7 +190,7 @@ def set_volume(value):
  actual_value = ((pow(config.sound['volume_base'], value / 100) - 1) / (config.sound['volume_base'] - 1)) * 100
  config.system['volume'] = value
  if config.sound['pyglet']:
-  if application.stream:
+  if application.stream is not None:
    application.stream.set_volume(actual_value / 100.0)
  else:
   application.output.set_volume(actual_value)
@@ -197,13 +200,13 @@ def set_volume(value):
 def set_pan(value):
  """Set pan to value."""
  config.system['pan'] = value
- if application.stream:
+ if application.stream is not None:
   application.stream.set_pan(value * 2 / 100 - 1.0)
 
 def set_frequency(value):
  """Set frequency to value."""
  config.system['frequency'] = value
- if application.stream:
+ if application.stream is not None:
   application.stream.set_frequency(value)
 
 def queue(track):

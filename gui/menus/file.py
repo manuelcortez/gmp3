@@ -5,6 +5,7 @@ from time import ctime
 from .base import BaseMenu
 from config import config
 from ..create_playlist import CreatePlaylist
+from ..internet_stream_frame import InternetStreamFrame
 from ..genre_station import GenreStation
 from functions.google import create_station, artist_action
 
@@ -15,6 +16,7 @@ class FileMenu(BaseMenu):
   super(FileMenu, self).__init__()
   parent.Bind(wx.EVT_MENU, lambda event: CreatePlaylist().Show(True), self.Append(wx.ID_NEW, '&New Playlist...\tCTRL+N', 'Create a new playlist.'))
   parent.Bind(wx.EVT_MENU, lambda event: CreatePlaylist(name = 'Search Results From %s' % ctime(), tracks = application.frame.results).Show(True) if application.frame.results else wx.Bell(), self.Append(wx.ID_ANY, 'New &Playlist From Results...\tCTRL+SHIFT+N', 'Create a playlist from the currently showing results.'))
+  parent.Bind(wx.EVT_MENU, lambda event: InternetStreamFrame(), self.Append(wx.ID_ANY, 'Create &Internet Stream\tCTRL+SHIFT+I', 'Create a new internet stream.'))
   self.AppendSeparator()
   stations_menu = wx.Menu()
   parent.Bind(wx.EVT_MENU, self.station_from_result, stations_menu.Append(wx.ID_ANY, 'From &Result...\tCTRL+9', 'Create a radio station based on the currently focused result.'))
