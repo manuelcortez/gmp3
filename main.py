@@ -23,11 +23,21 @@ if __name__ == '__main__':
   application.frame = MainFrame(None)
   application.frame.Show(True)
   application.frame.Maximize(True)
-  from server.base import app
   from threading import Thread
-  Thread(target = app.run, args = [args.server_host, args.server_port, args.log_file]).start()
+  from server.base import app
+  app.port = args.server_port
+  from twisted.web.server import Site
+  from twisted.internet import reactor, endpoints
+  endpoint_description = "tcp:port={0}:interface={1}".format(
+   args.server_port,
+   args.server_host
+  )
+  endpoint = endpoints.serverFromString(reactor, endpoint_description)
+  endpoint.listen(Site(app.resource())).addCallback(
+   lambda result: logging.info('Web server running on port %d.', result.port)
+  )
+  Thread(target = reactor.run, args = [False]).start()
   application.app.MainLoop()
-  from twisted.internet import reactor
   reactor.callFromThread(reactor.stop)
   logging.info('Done.')
  except Exception as e:
