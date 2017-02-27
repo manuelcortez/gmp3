@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from gmusicapi.exceptions import NotLoggedIn
 from sound_lib.main import BassError
 from lyricscraper.lyrics import Lyrics
-from functions.network import get_lyrics
+from functions.network import get_lyrics, get_stream_title
 from functions.util import do_login, do_error, format_track, format_timedelta, load_playlist, load_station, clean_library
 from functions.google import artist_action, add_to_library, remove_from_library, load_artist_tracks, load_artist_top_tracks, album_action, remove_from_playlist
 from functions.sound import play, get_previous, get_next, set_volume, seek, seek_amount
@@ -120,6 +120,20 @@ class MainFrame(wx.Frame):
   self.status = self.CreateStatusBar()
   self.status.SetStatusText('Nothing playing yet')
   add_accelerator(self, 'CTRL+R', self.cycle_repeat)
+  self.running = True
+  self.title_thread = Thread(target=self.set_title_from_stream)
+  self.title_thread.start()
+ 
+ def set_title_from_stream(self):
+  """If we're playing a network stream, set the actual title."""
+  while self.running:
+   if isinstance(application.track, URLStream):
+    try:
+     title = get_stream_title(application.track.url)
+     wx.CallAfter(self.SetTitle, title or application.track.name)
+    except Exception as e:
+     logger.error('Cannot get the stream title:')
+     logger.exception(e)
 
  def add_playlist(self, playlist):
   """Add playlist to the menu."""
@@ -192,13 +206,15 @@ class MainFrame(wx.Frame):
     self.add_station(s)
    set_volume(config.system['volume'])
 
- def SetTitle(self):
+ def SetTitle(self, title=None):
   """Set the title to something."""
   if application.stream is None:
-   title = 'Not Playing'
+   if title is None:
+    title = 'Not Playing'
    mode = None
   else:
-   title = str(application.track)
+   if title is None:
+    title = str(application.track)
    if application.stream.is_stopped:
     mode = 'Stopped'
    elif application.stream.is_paused:
@@ -362,8 +378,10 @@ class MainFrame(wx.Frame):
 
  def on_close(self, event):
   """Close the window."""
+  self.running = False
   self.tb_icon.Destroy()
   event.Skip()
+  self.title_thread.join()
   logger.info('Main frame closed.')
   self.position_timer.Stop()
   logger.info('Stopped the main timer.')
