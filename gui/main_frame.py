@@ -120,20 +120,18 @@ class MainFrame(wx.Frame):
   self.status = self.CreateStatusBar()
   self.status.SetStatusText('Nothing playing yet')
   add_accelerator(self, 'CTRL+R', self.cycle_repeat)
-  self.running = True
-  self.title_thread = Thread(target=self.set_title_from_stream)
-  self.title_thread.start()
- 
- def set_title_from_stream(self):
+  self.getting_stream_title = False
+
+ def set_title_from_stream(self, url):
   """If we're playing a network stream, set the actual title."""
-  while self.running:
-   if isinstance(application.track, URLStream):
-    try:
-     title = get_stream_title(application.track.url)
-     wx.CallAfter(self.SetTitle, title or application.track.name)
-    except Exception as e:
-     logger.error('Cannot get the stream title:')
-     logger.exception(e)
+  try:
+   title = get_stream_title(url)
+   wx.CallAfter(self.SetTitle, title or application.track)
+  except Exception as e:
+   logger.error('Cannot get the stream title:')
+   logger.exception(e)
+  finally:
+   self.getting_stream_title = False
 
  def add_playlist(self, playlist):
   """Add playlist to the menu."""
@@ -378,10 +376,8 @@ class MainFrame(wx.Frame):
 
  def on_close(self, event):
   """Close the window."""
-  self.running = False
   self.tb_icon.Destroy()
   event.Skip()
-  self.title_thread.join()
   logger.info('Main frame closed.')
   self.position_timer.Stop()
   logger.info('Stopped the main timer.')
@@ -452,6 +448,15 @@ class MainFrame(wx.Frame):
    else:
     self.add_result(t)
    self.update_status()
+  if isinstance(
+   application.track,
+   URLStream
+  ) and not self.getting_stream_title:
+   self.getting_stream_title = True
+   Thread(
+    target=self.set_title_from_stream,
+    args=[application.track.url]
+   ).start()
   if application.stream is not None:
    try:
     pos = application.stream.get_position()

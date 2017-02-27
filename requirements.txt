@@ -6,6 +6,7 @@ hg+http://hg.q-continuum.net/sound_lib
 git+https://github.com/chrisnorman7/wxgoodies.git#egg=wxgoodies
 git+https://github.com/chrisnorman7/simpleconf.git#egg=simpleconf
 sqlalchemy
+attr
 attrs-sqlalchemy
 gmusicapi
 requests
@@ -17,3 +18,4 @@ klein
 twisted
 wtforms
 jinja2
+humanize
