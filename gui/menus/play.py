@@ -40,6 +40,7 @@ class PlayMenu(BaseMenu):
   shuffle.Check(config.system['shuffle'])
   if not hasattr(application.frame, 'shuffle'):
    application.frame.shuffle = shuffle
+  parent.Bind(wx.EVT_MENU, parent.cast_result, self.Append(wx.ID_ANY, '&Cast...\tF11', 'Cast the currently-focused item'))
  
  def do_stop_after(self, value):
   """Setup stop_after."""

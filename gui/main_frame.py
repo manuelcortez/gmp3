@@ -4,8 +4,9 @@ import wx, application, showing, logging, sys, pyperclip
 from threading import Thread
 from functools import partial
 from six import string_types
-from wxgoodies.keys import add_accelerator, add_hotkey
 from datetime import timedelta
+from wxgoodies.keys import add_accelerator, add_hotkey
+from pychromecast import get_chromecasts
 from server import tracks
 from db import to_object, list_to_objects, session, Track, Playlist, Station, Artist, URLStream
 from config import save, config
@@ -771,3 +772,36 @@ class MainFrame(wx.Frame):
    wx.Bell()
   else:
    LyricsFrame(res)
+
+ def cast_result(self, event):
+  """Cast the currently-focused result."""
+  def f(device, result):
+   """Cast result to the specified device."""
+   if isinstance(result, URLStream):
+    url = result.url
+   else:
+    url = application.api.get_stream_url(result.id)
+   device.play_media(url, 'audio/mp3')
+  res = self.get_result()
+  if res is None:
+   return wx.Bell()
+  devices = sorted(get_chromecasts(), key=lambda result: result.name)
+  dlg = wx.SingleChoiceDialog(
+   self,
+   'Choose a device to cast to',
+   'Cast',
+   ['{} ({})'.format(
+       x.name,
+       (x.status.status_text or 'Not Playing') if x.status is not None else 'No Status'
+   ) for x in devices]
+  )
+  if dlg.ShowModal() == wx.ID_OK:
+   device = devices[dlg.GetSelection()]
+  else:
+   device = None
+  dlg.Destroy()
+  if device is not None:
+   try:
+    f(device, res)
+   except NotLoggedIn:
+    return do_login(callback=f, args=[device, res])

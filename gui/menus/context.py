@@ -23,6 +23,7 @@ class ContextMenu(wx.Menu):
   unqueue_item = self.Append(wx.ID_ANY, '&Unqueue Track', 'Remove the track from the play queue.')
   self.Bind(wx.EVT_MENU, lambda event: unqueue(track), unqueue_item)
   unqueue_item.Enable(track in application.frame.queue)
+  self.Bind(wx.EVT_MENU, application.frame.cast_result, self.Append(wx.ID_ANY, '&Cast...', 'Cast the currently-focused item'))
   if not isinstance(track, URLStream):
    self.Bind(wx.EVT_MENU, application.frame.load_artist_tracks, self.Append(wx.ID_ANY, 'Show A&rtist', 'Load all artist tracks.'))
    self.Bind(wx.EVT_MENU, application.frame.load_related_artist, self.Append(wx.ID_ANY, '&Related Artists...', 'Load a related artist.'))
