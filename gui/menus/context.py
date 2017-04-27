@@ -38,7 +38,7 @@ class ContextMenu(wx.Menu):
    self.Bind(wx.EVT_MENU, lambda event: Thread(target = playlist_action, args = ['Select a playlist to add this track to', 'Select a playlist', add_to_playlist, self.track]).start(), playlists_menu.Append(wx.ID_ANY, '&Remote...', 'Add this track to a remote playlist.'))
    self.AppendSubMenu(playlists_menu, '&Add To Playlist', 'Add this track to one of your playlists.')
    playlist_entries_menu = wx.Menu()
-   entry_item = self.AppendSubMenu(playlist_entries_menu, '&Remove from playlist', 'Remove this track from one of your playlists.')
+   entry_item = self.AppendSubMenu(playlist_entries_menu, 'R&emove from playlist', 'Remove this track from one of your playlists.')
    if track.playlist_entries:
     for e in track.playlist_entries:
      if e.playlist is None:
@@ -56,7 +56,7 @@ class ContextMenu(wx.Menu):
    self.Bind(wx.EVT_MENU, lambda event: os.remove(track.path) if track.downloaded else self.download(), self.Append(wx.ID_ANY, 'Remove &Download' if track.downloaded else '&Download', 'Manage the downloaded state of this track.'))
    self.Bind(wx.EVT_MENU, lambda event: application.frame.do_copy_id(track), self.Append(wx.ID_ANY, '&Copy ID', 'Copy the ID of the current track to the clipboard.'))
    self.Bind(wx.EVT_MENU, self.save_track, self.Append(wx.ID_ANY, '&Save Track...', 'Save the track to disk.'))
-   self.Bind(wx.EVT_MENU, self.reload, self.Append(wx.ID_ANY, '&Reindex', 'Reindex the track from Google.'))
+   self.Bind(wx.EVT_MENU, self.reload, self.Append(wx.ID_ANY, 'Re&index', 'Reindex the track from Google.'))
    self.Bind(wx.EVT_MENU, self.update_artists, self.Append(wx.ID_ANY, '&Update %s' % ('artist' if len(track.artists) == 1 else 'artists'), 'Update the stored artist information for this track.'))
   else:
    self.Bind(wx.EVT_MENU, lambda event: InternetStreamFrame(track), self.Append(wx.ID_ANY, '&Edit Stream...', 'Edit the currently-selected internet stream.'))
