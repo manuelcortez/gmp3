@@ -245,13 +245,21 @@ def set_volume(value):
         )
     ) * 100
     config.system['volume'] = value
-    if config.sound['pyglet']:
+    if application.frame.cast_device is not None:
+        application.frame.cast_device.set_volume(actual_value / 100.0)
+    elif config.sound['pyglet']:
         if application.stream is not None:
             application.stream.set_volume(actual_value / 100.0)
     else:
         application.output.set_volume(actual_value)
     application.frame.volume.SetValue(value)
-    logger.info('Set volume to %.2f (%s%%).', actual_value, value)
+    logger.info(
+        'Set volume to %.2f (%s%%).',
+        actual_value / 100.0
+        if application.frame.cast_device else
+        actual_value,
+        value
+    )
 
 
 def set_pan(value):
