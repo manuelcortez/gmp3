@@ -799,6 +799,7 @@ class MainFrame(wx.Frame):
                 url = application.api.get_stream_url(result.id)
             self.do_stop(None)
             device.wait()
+            set_volume(device.status.volume_level * 100)
             device.play_media(url, 'audio/mp3')
             self.cast_device = device
         res = self.get_result()
