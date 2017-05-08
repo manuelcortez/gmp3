@@ -25,7 +25,7 @@ class SourceMenu(BaseMenu):
   self.AppendSubMenu(parent.stations_menu if parent is application.frame else StationsMenu(parent), '&Radio Stations', 'Locally stored and remote radio stations.')
   parent.Bind(wx.EVT_MENU, lambda event: application.frame.add_results(session.query(URLStream), showing=showing.SHOWING_STREAMS), self.Append(wx.ID_ANY, '&Internet Streams\tCTRL+I', 'Show all internet streams.'))
   parent.Bind(wx.EVT_MENU, lambda event: setattr(application.frame, 'autoload', [application.frame.autoload[0]] if application.frame.autoload else []), self.Append(wx.ID_ANY, 'St&op Loading Results', 'Stop loading results to the track view.'))
-  parent.Bind(wx.EVT_MENU, self.load_track, self.Append(wx.ID_ANY, 'Load Specific Track...\tCTRL+SHIFT+I', 'Load a track with a specific ID.'))
+  parent.Bind(wx.EVT_MENU, self.load_track, self.Append(wx.ID_ANY, 'Load Specific Track...\tCTRL+SHIFT+V', 'Load a track with a specific ID.'))
   parent.Bind(wx.EVT_MENU, lambda event: webbrowser.open('http://%s:%s@localhost:%d' % (config.http['uid'], config.http['pwd'], app.port)) if config.http['enabled'] else do_error('The web server is not running. Enable it and restart GMP.'), self.Append(wx.ID_ANY, '&Web Interface...', 'Load the web interface.'))
  
  def load_track(self, event, id = None):
