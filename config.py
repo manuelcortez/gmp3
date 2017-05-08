@@ -93,9 +93,10 @@ class Config(Section):
         clear_queue = Option(True, title = 'Clear The &Queue When Enter Is Pressed', validator = Boolean)
         result_format = Option('{artist} - {album} - {number} - {title} ({length})', title = '&Track Format')
         status_bar_format = Option('{text} ({loaded} / {total} loaded {percentage}%) [{duration}]', title = '&Status Bar Format')
+        id_regexp = Option('^(gmp|gmusic|id)(://)?(?P<id>[^$]+)$', title='The regexp to use for loading a track from a specific &ID')
         results = Option(25, title = '&Results To Download', validator = Integer(min = 1, max = 100))
         notify = Option(False, title = '&Notify for each playing track', validator = Boolean)
-        option_order = [clear_queue, result_format, status_bar_format, results, notify]
+        option_order = [clear_queue, result_format, status_bar_format, id_regexp, results, notify]
     
     class storage(Section):
         """Storage configuration."""

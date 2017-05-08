@@ -2,6 +2,7 @@
 
 import wx, application, showing, logging, sys, pyperclip
 from threading import Thread
+from re import search
 from functools import partial
 from six import string_types
 from datetime import timedelta
@@ -12,7 +13,7 @@ from db import to_object, list_to_objects, session, Track, Playlist, Station, Ar
 from config import save, config
 from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
-from gmusicapi.exceptions import NotLoggedIn
+from gmusicapi.exceptions import NotLoggedIn, CallFailure
 from sound_lib.main import BassError
 from lyricscraper.lyrics import Lyrics
 from functions.network import get_lyrics, get_stream_title
@@ -62,7 +63,7 @@ class MainFrame(wx.Frame):
         self.menu = wx.Button(p, label = '&Menu')
         self.search_label = wx.StaticText(p, label = SEARCH_LABEL)
         self.search = wx.TextCtrl(p, style = wx.TE_PROCESS_ENTER)
-        self.search.Bind(wx.EVT_TEXT_ENTER, lambda event: self.do_local_search(self.search.GetValue()) if self.offline_search.IsChecked() else self.do_remote_search(self.search.GetValue()))
+        self.search.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
         s1.AddMany([
             (self.previous, 0, wx.GROW),
             (self.play, 0, wx.GROW),
@@ -124,6 +125,19 @@ class MainFrame(wx.Frame):
         add_accelerator(self, 'CTRL+R', self.cycle_repeat)
         self.getting_stream_title = False
 
+    def on_text_enter(self, event):
+        """Enter was pressed in the text field."""
+        value = self.search.GetValue()
+        m = search(config.interface['id_regexp'], value)
+        if m is not None:
+            try:
+                self.load_id(m.groupdict()['id'])
+            except KeyError:
+                do_error('No id found in the ID regexp. Please fix this in the Interface configuration.')
+        elif self.offline_search.IsChecked():
+            self.do_local_search(value)
+        else:
+            self.do_remote_search(value)
     def set_title_from_stream(self, url):
         """If we're playing a network stream, set the actual title."""
         try:
@@ -825,3 +839,13 @@ class MainFrame(wx.Frame):
                 f(device, res)
             except NotLoggedIn:
                 return do_login(callback=f, args=[device, res])
+
+    def load_id(self, id):
+        """Play a track with a specific ID."""
+        try:
+            info = application.api.get_track_info(id)
+        except CallFailure:
+            return do_error('Invalid track ID: %s.' % id)
+        except NotLoggedIn:
+            return do_login(callback=self.load_id, args=[id])
+        self.add_results([info], showing='ID: %s' % id)
