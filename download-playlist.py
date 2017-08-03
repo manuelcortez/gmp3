@@ -86,8 +86,8 @@ if res:
             else:
                 number = str(number)
             title = valid_filename(r.get('title', 'Untitled'))
-            filename = u'%s - %s.mp3' % (number, title)
-            path = os.path.join(args.dir, artist, album)
+            filename = '%s - %s.mp3' % (number, title)
+            path = os.path.join(args.dir, artist)
             filename = os.path.join(path, filename)
             if os.path.isfile(filename):
                 print('Track already downloaded: %s - %s.' % (artist, title))
