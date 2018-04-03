@@ -9,6 +9,7 @@ from db import session, Playlist, URLStream
 from ..internet_stream_frame import InternetStreamFrame
 from gmusicapi.exceptions import NotLoggedIn
 from threading import Thread
+from wx.lib.pubsub import pub
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class ContextMenu(wx.Menu):
   except NotLoggedIn:
    return do_login(callback = self.download, kwargs = dict(track = track))
  
- def save_track(self, event, path = None):
+ def save_track(self, event=None, path = None):
   """Save the track to disk."""
   if path is None:
    dlg = wx.FileDialog(None, message = 'Choose where to save the file', defaultFile = format_track(self.track) + '.mp3', style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
@@ -79,10 +80,8 @@ class ContextMenu(wx.Menu):
     path = dlg.GetPath()
    dlg.Destroy()
   if path:
-   try:
-    download_track(application.api.get_stream_url(self.track.id), path)
-   except NotLoggedIn:
-    do_login(callback = self.save_track, args = [event], kwargs = dict(path = path))
+   Thread(target=download_track, args=[application.api.get_stream_url(self.track.id), path]).start()
+
   
  def add_rating(self, rating):
   """Rate the current track."""

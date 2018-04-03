@@ -7,19 +7,24 @@ from urllib.request import Request, urlopen
 import application
 from requests import get
 from lyricscraper import lyrics
+from gmusicapi.exceptions import NotLoggedIn
+from wx.lib.pubsub import pub
 from .util import prune_library
 
 
 def download_track(url, path):
     """Download URL to path."""
-    response = get(url)
-    folder = os.path.dirname(path)
-    if not os.path.isdir(folder):
-        os.makedirs(folder)
-    with open(path, 'wb') as f:
-        application.library_size += f.write(response.content)
-    wx.CallAfter(prune_library)  # Delete old tracks if necessry.
-
+    try:
+        response = get(url)
+        folder = os.path.dirname(path)
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        with open(path, 'wb') as f:
+            application.library_size += f.write(response.content)
+        wx.CallAfter(prune_library)  # Delete old tracks if necessry.
+        pub.sendMessage("download_finished", track=os.path.basename(path))
+    except NotLoggedIn:
+        pub.sendMessage("do_login")
 
 def get_lyrics(track):
     """Get the lyrics of the provided track."""

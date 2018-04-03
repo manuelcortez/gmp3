@@ -1,6 +1,7 @@
 """The main frame."""
 
 import wx, application, showing, logging, sys, pyperclip
+from wx.lib.pubsub import pub
 from threading import Thread
 from re import search
 from functools import partial
@@ -124,6 +125,7 @@ class MainFrame(wx.Frame):
         self.status.SetStatusText('Nothing playing yet')
         add_accelerator(self, 'CTRL+R', self.cycle_repeat)
         self.getting_stream_title = False
+        pub.subscribe(self.download_finished, "download_finished")
 
     def on_text_enter(self, event):
         """Enter was pressed in the text field."""
@@ -849,3 +851,12 @@ class MainFrame(wx.Frame):
         except NotLoggedIn:
             return do_login(callback=self.load_id, args=[id])
         self.add_results([info], showing='ID: %s' % id)
+
+
+    def notify(self, title, text):
+        notification = wx.adv.NotificationMessage(title, text, parent=self)
+        notification.Show()
+
+
+    def download_finished(self, track):
+        self.notify(title="GMP3", text="Download finished")
