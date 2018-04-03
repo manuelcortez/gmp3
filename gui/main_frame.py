@@ -412,6 +412,7 @@ class MainFrame(wx.Frame):
             self.cast_device.media_controller.stop()
         logger.info('Cleaning the media directory.')
         clean_library()
+        wx.GetApp().ExitMainLoop()
         logger.info('Library cleaned.')
 
     def on_activate(self, event):
